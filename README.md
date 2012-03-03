@@ -3,6 +3,8 @@
 * Copy the `update` folder to your project
 * Create a update.ini on your server
 
+** Important: Please notice that PHP needs write permissions to update the files on your webserver **
+
 ## Description
 
 The update folder consists of two files:

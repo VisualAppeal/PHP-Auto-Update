@@ -102,7 +102,7 @@ class AutoUpdate {
 			$log = fopen($this->logFile, 'a');
 			
 			if ($log) {
-				$message = date('<Y-m-d H:i:s>').$message;
+				$message = date('<Y-m-d H:i:s>').$message."\n";
 				fputs($log, $message);
 				fclose($log);
 			}
