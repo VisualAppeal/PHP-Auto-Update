@@ -27,7 +27,7 @@ The `update.ini` should look like this:
 You can name the versions whatever you want but the sections (for example `[1]`) has to be an integer so that the class can compare the versions. You cannot compare `1.4.3-13.r1441` with `1.4.3-12.r1445` without problems. The `url` has to be absolute.
 
 ### Update files
-Zip your project and rename it `version.zip`. The zip file should include all of the project files.
+Zip your project and rename it to `version.zip`. The zip file should include all of the project files.
 
 ### Check for an update
 	
@@ -37,12 +37,12 @@ Zip your project and rename it `version.zip`. The zip file should include all of
 	
 	require('update.php');
 
-	$update = new AutoUpdate(true);
+	$update = new AutoUpdate(true); //Enable logging
 
 	$update->currentVersion = 1;
 	
 	/*
-	 * In this example the folder updates includes 3 files, 0.1.zip, 0.2.zip and update.ini
+	 * In this example the folder 'updateUrl' includes 3 files, 0.1.zip, 0.2.zip and update.ini
 	 */
 	$update->updateUrl = 'http://example.com/updates';
 
@@ -52,6 +52,8 @@ Zip your project and rename it `version.zip`. The zip file should include all of
 		if ($latest > $update->currentVersion) {
 			//Install new update
 			echo "New Version: ".$update->latestVersionName."<br>";
+			
+			//You can also stop here and let the user decide when to update.
 			echo "Installing Update...<br>";
 			if ($update->update()) {
 				echo "Update successful!";
@@ -68,5 +70,3 @@ Zip your project and rename it `version.zip`. The zip file should include all of
 	else {
 		echo $update->getLastError();
 	}
-
-You can also simply display the update and let the user decide when to update.
