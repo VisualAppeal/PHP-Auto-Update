@@ -1,9 +1,9 @@
 ## Installation
 
-* Copy the `update` folder to your project
-* Create a update.ini on your server
+* Copy the `update` folder to your project (what should be updated)
+* Create a update.ini on your server (where the updates are from)
 
-** Important: Please notice that PHP needs write permissions to update the files on your webserver **
+**Important: Please notice that PHP needs write permissions to update the files on your webserver**
 
 ## Description
 
