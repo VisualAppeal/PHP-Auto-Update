@@ -172,7 +172,7 @@ class AutoUpdate {
 				
 				$this->log('New version found `'.$latest.'`.');
 				$this->latestVersion = $keyOld;
-				$this->latestVersionname = $latest;
+				$this->latestVersionName = $latest;
 				$this->latestUpdate = $update;
 				
 				return $keyOld;
