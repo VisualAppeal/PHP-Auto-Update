@@ -72,3 +72,6 @@ Zip your project and rename it to `version.zip`. The zip file should include all
 	else {
 		echo $update->getLastError();
 	}
+
+
+[![Analytics](https://ga-beacon.appspot.com/UA-46905576-1/your-repo/page-name)](https://github.com/VisualAppeal/PHP-Auto-Update)
