@@ -1,5 +1,3 @@
-[![Analytics](https://ga-beacon.appspot.com/UA-46905576-1/VisualAppeal/PHP-Auto-Update)](https://github.com/VisualAppeal/PHP-Auto-Update)
-
 ## Installation
 
 * Copy the `update` folder to your project (what should be updated)
