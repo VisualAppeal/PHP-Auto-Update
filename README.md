@@ -1,3 +1,5 @@
+[![Analytics](https://ga-beacon.appspot.com/UA-46905576-1/VisualAppeal/PHP-Auto-Update)](https://github.com/VisualAppeal/PHP-Auto-Update)
+
 ## Installation
 
 * Copy the `update` folder to your project (what should be updated)
@@ -72,6 +74,3 @@ Zip your project and rename it to `version.zip`. The zip file should include all
 	else {
 		echo $update->getLastError();
 	}
-
-
-[![Analytics](https://ga-beacon.appspot.com/UA-46905576-1/your-repo/page-name)](https://github.com/VisualAppeal/PHP-Auto-Update)
