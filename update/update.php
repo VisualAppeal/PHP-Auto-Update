@@ -243,9 +243,16 @@ class AutoUpdate {
 				continue;
 			
 			//Write to file
-			if (!is_writable($this->installDir.$filename)) {
-				$this->log('Could not update `'.$this->installDir.$filename.'`, not writeable!');
-				return false;
+			if (file_exists($this->installDir.$filename)) {
+				if (!is_writable($this->installDir.$filename)) {
+					$this->log('Could not update `'.$this->installDir.$filename.'`, not writable!');
+					return false;
+				}
+			} else {
+				$this->log('The file `'.$this->installDir.$filename.'`, does not exist!');			
+				$new_file = fopen($this->installDir.$filename, "w") or $this->log('The file `'.$this->installDir.$filename.'`, could not be created!');
+				fclose($new_file);
+				$this->log('The file `'.$this->installDir.$filename.'`, was succesfully created.');
 			}
 			
 			$updateHandle = @fopen($this->installDir.$filename, 'w');
