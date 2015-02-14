@@ -1,74 +1,69 @@
-## Installation
+## Install
 
-* Copy the `update` folder to your project (what should be updated)
-* Create a update.ini on your server (where the updates are from)
+* Install the library via composer [visualappeal/php-auto-update](https://packagist.org/packages/visualappeal/php-auto-update)
+* Create a update file in your client application (e.g. in a subdirectory `update`) with your update routine (see `example/client/update/index.php`)
+* Create a `update.json` or `update.ini` on your server (where the client should get the updates, see `example/server/update.json` or `example/server/update.ini`)
 
 **Important: Please notice that PHP needs write permissions to update the files on your webserver**
 
-## Description
+## Example
 
-The update folder consists of two files:
+### Overview
 
-* `index.php` - includes the class and calls the update 
-* `update.php` - update class
+1. You've created a php image gallery and your clients should be able to update theire galleries without coping files via ftp.
+2. Therfore you need at least one new file in the image gallery (we will call it `update.php` but the name doesn't matter)
+3. When the user visits `update.php` the library will check for a new version and install all new versions incrementally
 
-You should not call the update out of your project (what happens if you try to update a file which is in use at the moment?). At your server you need a folder with a configuration file `update.ini` and the ziped versions.
+### Client
 
-### update.ini
+The client is the image gallery.
 
-The `update.ini` should look like this:
+#### update.php
 
-	[1]
-	version = 0.1
-	url = http://example.com/updates/0.1.zip
-	
-	[2]
-	version = 0.2
-	url = http://example.com/updates/0.2.zip
+This file will install the update. For an example see `example/client/update/index.php`
 
-You can name the versions whatever you want but the sections (for example `[1]`) has to be an integer so that the class can compare the versions. You cannot compare `1.4.3-13.r1441` with `1.4.3-12.r1445` without problems. The `url` has to be absolute.
+#### Check for new versions
 
-### Update files
-Zip your project and rename it to `version.zip`. The zip file should include all of the project files.
+You can always check for new versions, e.g. in the footer. This can look like this:
 
-### Check for an update
-	
-	/*
-	 * Index.php in the folder update
-	 */
-	
-	require('update.php');
+```php
+<?php
 
-	$update = new AutoUpdate(true); //Enable logging
+require(__DIR__ . '/../../../vendor/autoload.php');
 
-	$update->currentVersion = 1;
-	
-	/*
-	 * In this example the folder 'updateUrl' includes 3 files, 0.1.zip, 0.2.zip and update.ini
-	 */
-	$update->updateUrl = 'http://example.com/updates';
+use \VisualAppeal\AutoUpdate;
 
-	$latest = $update->checkUpdate();
-	
-	if ($latest !== false) {
-		if ($latest > $update->currentVersion) {
-			//Install new update
-			echo "New Version: ".$update->latestVersionName."<br>";
-			
-			//You can also stop here and let the user decide when to update.
-			echo "Installing Update...<br>";
-			if ($update->update()) {
-				echo "Update successful!";
-			}
-			else {
-				echo "Update failed!";
-			}
-			
-		}
-		else {
-			echo "Current Version is up to date";
-		}
-	}
-	else {
-		echo $update->getLastError();
-	}
+// Download the zip update files to `__DIR__ . '/temp'`
+// Copy the contents of the zip file to the current directory `__DIR__`
+// The update process should last 60 seconds
+$update = new AutoUpdate(__DIR__ . '/temp', __DIR__, 60);
+$update->setCurrentVersion('0.1.0'); // Current version of your application. This value should be from a database or another file which will be updated with the installation of a new version
+$update->setUpdateUrl('http://php-auto-update.app/update/'); //Replace the url with your server update url
+
+// The following two lines are optional
+$update->addLogHandler(new Monolog\Handler\StreamHandler(__DIR__ . '/update.log'));
+$update->setCache(new Desarrolla2\Cache\Adapter\File(__DIR__ . '/cache'), 3600);
+
+//Check for a new update
+if ($update->checkUpdate() === false)
+	die('Could not check for updates! See log file for details.');
+
+// Check if new update is available
+if ($update->newVersionAvailable()) {
+	//Install new update
+	echo 'New Version: ' . $update->getLatestVersion();
+} else {
+	// No new update
+	echo 'Your application is up to date';
+}
+```
+
+The library supports the `desarrolla2/cache` component, you should use it! Otherwise the client will download the update ini/json file on every request.
+
+### Server
+
+Your server needs at least one file which will be downloaded from the client to check for updates. This can be a json or an ini file. See `example/server/` for examples. The ini section key respectively the json key is the version. This library uses semantiv versioning to compare the versions. See [semver.org](http://semver.org/) for details. The ini/json value is the absolute url to the update zip file. Since the library supports incrementall updates, the zip file only need to contain the changes since the last version. The zip files do not need to be placed on the same server, they can be uploaded to S3 or another cloud storage, too.
+
+## Documentation
+
+For the documentation see the comments in `src/AutoUpdate.php` or the example in the `example` directory
