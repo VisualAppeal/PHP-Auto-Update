@@ -1,14 +1,14 @@
 <?php namespace VisualAppeal;
 
-use vierbergenlars\SemVer\version;
-use vierbergenlars\SemVer\expression;
-use vierbergenlars\SemVer\SemVerException;
+use \vierbergenlars\SemVer\version;
+use \vierbergenlars\SemVer\expression;
+use \vierbergenlars\SemVer\SemVerException;
 
-use Desarrolla2\Cache\Cache;
-use Desarrolla2\Cache\Adapter\NotCache;
+use \Desarrolla2\Cache\Cache;
+use \Desarrolla2\Cache\Adapter\NotCache;
 
-use Monolog\Logger;
-use Monolog\Handler\NullHandler;
+use \Monolog\Logger;
+use \Monolog\Handler\NullHandler;
 
 /**
  * Auto update class.
@@ -355,9 +355,9 @@ class AutoUpdate
 			$updateFileExtension = substr(strrchr($this->_updateFile, '.'), 1);
 			switch ($updateFileExtension) {
 				case 'ini':
-					$versions = parse_ini_string($update, true);
+					$versions = @parse_ini_string($update, true);
 					if (!is_array($versions)) {
-						$this->_log->addInfo('Unable to parse update file!');
+						$this->_log->addInfo('Unable to parse ini update file!');
 						return false;
 					}
 
@@ -367,7 +367,11 @@ class AutoUpdate
 
 					break;
 				case 'json':
-					$versions = json_decode($update);
+					$versions = (array) @json_decode($update);
+					if (!is_array($versions)) {
+						$this->_log->addInfo('Unable to parse json update file!');
+						return false;
+					}
 
 					break;
 				default:
