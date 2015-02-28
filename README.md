@@ -10,13 +10,11 @@
 
 ### Overview
 
-1. You've created a php image gallery and your clients should be able to update theire galleries without coping files via ftp.
-2. Therfore you need at least one new file in the image gallery (we will call it `update.php` but the name doesn't matter)
+1. You've created a php application and your clients should be able to update theire code without coping files via ftp.
+2. Therfore you need at least one new file in the application (we will call it `update.php` but the name doesn't matter)
 3. When the user visits `update.php` the library will check for a new version and install all new versions incrementally
 
 ### Client
-
-The client is the image gallery.
 
 #### update.php
 
