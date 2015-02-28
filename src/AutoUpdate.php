@@ -44,27 +44,6 @@ class AutoUpdate
 	private $_simulationResults = array();
 
 	/**
-	 * Url to the update folder on the server.
-	 *
-	 * @var string
-	 */
-	protected $_updateUrl = 'https://example.com/updates/';
-
-	/**
-	 * Version filename on the server.
-	 *
-	 * @var string
-	 */
-	protected $_updateFile = 'update.json';
-
-	/**
-	 * Current version.
-	 *
-	 * @var vierbergenlars\SemVer\version
-	 */
-	protected $_currentVersion = null;
-
-	/**
 	 * Temporary download directory.
 	 *
 	 * @var string
@@ -84,6 +63,27 @@ class AutoUpdate
 	 * @var string
 	 */
 	private $_branch = '';
+
+	/**
+	 * Url to the update folder on the server.
+	 *
+	 * @var string
+	 */
+	protected $_updateUrl = 'https://example.com/updates/';
+
+	/**
+	 * Version filename on the server.
+	 *
+	 * @var string
+	 */
+	protected $_updateFile = 'update.json';
+
+	/**
+	 * Current version.
+	 *
+	 * @var vierbergenlars\SemVer\version
+	 */
+	protected $_currentVersion = null;
 
 	/**
 	 * Create new folders with this privileges.
@@ -187,6 +187,7 @@ class AutoUpdate
 		}
 
 		$this->_tempDir = $dir;
+		return $this;
 	}
 
 	/**
@@ -208,6 +209,7 @@ class AutoUpdate
 		}
 
 		$this->_installDir = $dir;
+		return $this;
 	}
 
 	/**
@@ -218,6 +220,7 @@ class AutoUpdate
 	public function setUpdateFile($updateFile)
 	{
 		$this->_updateFile = $updateFile;
+		return $this;
 	}
 
 	/**
@@ -228,6 +231,7 @@ class AutoUpdate
 	public function setUpdateUrl($updateUrl)
 	{
 		$this->_updateUrl = $updateUrl;
+		return $this;
 	}
 
 	/**
@@ -238,6 +242,7 @@ class AutoUpdate
 	public function setBranch($branch)
 	{
 		$this->_branch = $branch;
+		return $this;
 	}
 
 	/**
@@ -250,6 +255,7 @@ class AutoUpdate
 	{
 		$adapter->setOption('ttl', $ttl);
 		$this->_cache = new Cache($adapter);
+		return $this;
 	}
 
 	/**
@@ -268,7 +274,7 @@ class AutoUpdate
 		}
 
 		$this->_currentVersion = $version;
-		return true;
+		return $this;
 	}
 
 	/**
@@ -279,6 +285,7 @@ class AutoUpdate
 	public function addLogHandler(\Monolog\Handler\HandlerInterface $handler)
 	{
 		$this->_log->pushHandler($handler);
+		return $this;
 	}
 
 	/**
