@@ -15,9 +15,9 @@ class AutoUpdateTest extends PHPUnit_Framework_TestCase
 
 	protected function setUp()
 	{
-		$this->_update = new AutoUpdate(__DIR__ . '/temp', __DIR__ . '/install');
+		$this->_update = new AutoUpdate(__DIR__ . DIRECTORY_SEPARATOR . 'temp', __DIR__ . DIRECTORY_SEPARATOR . 'install');
 		$this->_update->setCurrentVersion('0.1.0');
-		$this->_update->setUpdateUrl(__DIR__ . '/fixtures/');
+		$this->_update->setUpdateUrl(__DIR__ . DIRECTORY_SEPARATOR . 'fixtures');
 	}
 
 	protected function tearDown()
@@ -104,5 +104,29 @@ class AutoUpdateTest extends PHPUnit_Framework_TestCase
 		$this->assertEquals(AutoUpdate::NO_UPDATE_AVAILABLE, $response);
 		$this->assertFalse($this->_update->newVersionAvailable());
 		$this->assertEquals(0, count($this->_update->getVersionsToUpdate()));
+	}
+
+	/**
+	 * Ensure that a new dev version is available.
+	 */
+	public function testBranchDev()
+	{
+		$this->_update->setUpdateFile('updateAvailable.json');
+		$this->_update->setBranch('dev');
+		$response = $this->_update->checkUpdate();
+
+		$this->assertTrue($response);
+	}
+
+	/**
+	 * Ensure that no new master version is available
+	 */
+	public function testBranchMaster()
+	{
+		$this->_update->setUpdateFile('noUpdateAvailable.json');
+		$this->_update->setBranch('master');
+		$response = $this->_update->checkUpdate();
+
+		$this->assertEquals(AutoUpdate::NO_UPDATE_AVAILABLE, $response);
 	}
 }

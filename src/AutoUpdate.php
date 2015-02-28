@@ -79,6 +79,13 @@ class AutoUpdate
 	private $_installDir = '';
 
 	/**
+	 * Update branch.
+	 *
+	 * @var string
+	 */
+	private $_branch = '';
+
+	/**
 	 * Create new folders with this privileges.
 	 *
 	 * @var int
@@ -224,6 +231,16 @@ class AutoUpdate
 	}
 
 	/**
+	 * Set the update branch.
+	 *
+	 * @param string branch
+	 */
+	public function setBranch($branch)
+	{
+		$this->_branch = $branch;
+	}
+
+	/**
 	 * Set the cache component.
 	 *
 	 * @param Desarrolla2\Cache\Adapter\AdapterInterface $adapter See https://github.com/desarrolla2/Cache
@@ -341,7 +358,11 @@ class AutoUpdate
 
 		// Check if cache is empty
 		if ($versions === false) {
+			// Create absolute url to update file
 			$updateFile = $this->_updateUrl . '/' . $this->_updateFile;
+			if (!empty($this->_branch))
+				$updateFile .= '.' . $this->_branch;
+
 			$this->_log->addDebug(sprintf('Get new updates from %s', $updateFile));
 
 			// Read update file from update server
