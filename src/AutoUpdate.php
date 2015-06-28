@@ -586,7 +586,7 @@ class AutoUpdate
 			}
 
 			if ($filename == $this->updateScriptName) {
-				$this->_log->addDebug('[SIMULATE] Update script "%s" found', $absoluteFilename);
+				$this->_log->addDebug(sprintf('[SIMULATE] Update script "%s" found', $absoluteFilename));
 				$files[$i]['update_script'] = true;
 			} else {
 				$files[$i]['update_script'] = false;
