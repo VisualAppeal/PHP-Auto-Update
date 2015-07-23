@@ -152,6 +152,10 @@ class AutoUpdate
 	 * @param int $maxExecutionTime
 	 */
 	public function __construct($tempDir = null, $installDir = null, $maxExecutionTime = 60) {
+		// Init logger
+		$this->_log = new Logger('auto-update');
+		$this->_log->pushHandler(new NullHandler());
+		
 		$this->setTempDir(($tempDir !== null) ? $tempDir : __DIR__ . '/temp/');
 		$this->setInstallDir(($installDir !== null) ? $installDir : __DIR__ . '/../../');
 
@@ -160,10 +164,6 @@ class AutoUpdate
 
 		// Init cache
 		$this->_cache = new Cache(new NotCache());
-
-		// Init logger
-		$this->_log = new Logger('auto-update');
-		$this->_log->pushHandler(new NullHandler());
 
 		ini_set('max_execution_time', $maxExecutionTime);
 	}
