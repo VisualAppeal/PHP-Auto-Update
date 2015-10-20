@@ -313,7 +313,7 @@ class AutoUpdate
      * @param $username
      * @param $password
      */
-    public function setbasicAuth($username, $password)
+    public function setBasicAuth($username, $password)
     {
         $this->_username = $username;
         $this->_password = $password;
