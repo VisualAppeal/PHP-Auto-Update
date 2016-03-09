@@ -691,7 +691,6 @@ class AutoUpdate
         // Check if install should be simulated
         if ($simulateInstall && !$this->_simulateInstall($updateFile)) {
             $this->_log->addCritical('Simulation of update process failed!');
-            zip_close($zip);
 
             return self::ERROR_SIMULATE;
         }
