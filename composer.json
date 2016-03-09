@@ -10,7 +10,7 @@
     ],
     "minimum-stability": "stable",
     "require": {
-        "php": ">= 5.3.0",
+        "php": ">= 5.5.9",
         "vierbergenlars/php-semver": "3.0.*",
         "desarrolla2/cache": "2.1.*",
         "monolog/monolog": "1.18.*"
