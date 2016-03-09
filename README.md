@@ -60,4 +60,4 @@ Your server needs at least one file which will be downloaded from the client to 
 
 ## Documentation
 
-For the documentation see the comments in `src/AutoUpdate.php` or the example in the `example` directory
+For the documentation see the comments in `src/AutoUpdate.php` or the example in the `example` directory.
