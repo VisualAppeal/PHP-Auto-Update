@@ -171,8 +171,8 @@ class AutoUpdate
         $this->_log = new Logger('auto-update');
         $this->_log->pushHandler(new NullHandler());
 
-        $this->setTempDir(($tempDir !== null) ? $tempDir : __DIR__ . '/temp/');
-        $this->setInstallDir(($installDir !== null) ? $installDir : __DIR__ . '/../../');
+        $this->setTempDir(($tempDir !== null) ? $tempDir : __DIR__ . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR);
+        $this->setInstallDir(($installDir !== null) ? $installDir : __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR);
 
         $this->_latestVersion = new version('0.0.0');
         $this->_currentVersion = new version('0.0.0');
@@ -191,11 +191,11 @@ class AutoUpdate
      */
     public function setTempDir($dir)
     {
-        // Add slash at the end of the path
-        if (substr($dir, -1 != '/'))
-            $dir = $dir . '/';
+        $dir = $this->_addTrailingSlash($dir);
 
         if (!is_dir($dir)) {
+            $this->_log->addDebug(sprintf('Creating new temporary directory "%s"', $dir));
+
             if (!mkdir($dir, 0755, true)) {
                 $this->_log->addCritical(sprintf('Could not create temporary directory "%s"', $dir));
 
@@ -216,13 +216,13 @@ class AutoUpdate
      */
     public function setInstallDir($dir)
     {
-        // Add slash at the end of the path
-        if (substr($dir, -1 != '/'))
-            $dir = $dir . '/';
+        $dir = $this->_addTrailingSlash($dir);
 
         if (!is_dir($dir)) {
+            $this->_log->addDebug(sprintf('Creating new install directory "%s"', $dir));
+
             if (!mkdir($dir, 0755, true)) {
-                $this->_log->addCritical(sprintf('Could not create temporary directory "%s"', $dir));
+                $this->_log->addCritical(sprintf('Could not create install directory "%s"', $dir));
 
                 return;
             }
@@ -326,17 +326,14 @@ class AutoUpdate
     private function _useBasicAuth()
     {
         if ($this->_username && $this->_password) {
-
             return stream_context_create(array(
                 'http' => array(
                     'header' => "Authorization: Basic " . base64_encode("$this->_username:$this->_password")
                 )
             ));
-
         }
 
         return null;
-
     }
 
     /**
@@ -403,10 +400,10 @@ class AutoUpdate
 
         $objects = array_diff(scandir($dir), array('.', '..'));
         foreach ($objects as $object) {
-            if (is_dir($dir . '/' . $object))
-                $this->_removeDir($dir . '/' . $object);
+            if (is_dir($dir . DIRECTORY_SEPARATOR . $object))
+                $this->_removeDir($dir . DIRECTORY_SEPARATOR . $object);
             else
-                unlink($dir . '/' . $object);
+                unlink($dir . DIRECTORY_SEPARATOR . $object);
         }
 
         return rmdir($dir);
@@ -433,7 +430,7 @@ class AutoUpdate
         // Check if cache is empty
         if ($versions === false) {
             // Create absolute url to update file
-            $updateFile = $this->_updateUrl . '/' . $this->_updateFile;
+            $updateFile = $this->_updateUrl . DIRECTORY_SEPARATOR . $this->_updateFile;
             if (!empty($this->_branch))
                 $updateFile .= '.' . $this->_branch;
 
@@ -623,7 +620,7 @@ class AutoUpdate
             }
 
             // Skip if entry is a directory
-            if (substr($filename, -1, 1) == '/')
+            if (substr($filename, -1, 1) == DIRECTORY_SEPARATOR)
                 continue;
 
             // Read file contents from archive
@@ -722,7 +719,7 @@ class AutoUpdate
             }
 
             // Skip if entry is a directory
-            if (substr($filename, -1, 1) == '/')
+            if (substr($filename, -1, 1) == DIRECTORY_SEPARATOR)
                 continue;
 
             // Read file contents from archive
@@ -881,5 +878,19 @@ class AutoUpdate
         }
 
         return true;
+    }
+
+    /**
+     * Add slash at the end of the path.
+     *
+     * @param string $dir
+     * @return string
+     */
+    protected function _addTrailingSlash($dir)
+    {
+        if (substr($dir, -1 != DIRECTORY_SEPARATOR))
+            $dir = $dir . DIRECTORY_SEPARATOR;
+
+        return $dir;
     }
 }
