@@ -191,7 +191,7 @@ class AutoUpdate
      */
     public function setTempDir($dir)
     {
-        $dir = $this->_addTrailingSlash($dir);
+        $dir = $this->addTrailingSlash($dir);
 
         if (!is_dir($dir)) {
             $this->_log->addDebug(sprintf('Creating new temporary directory "%s"', $dir));
@@ -216,7 +216,7 @@ class AutoUpdate
      */
     public function setInstallDir($dir)
     {
-        $dir = $this->_addTrailingSlash($dir);
+        $dir = $this->addTrailingSlash($dir);
 
         if (!is_dir($dir)) {
             $this->_log->addDebug(sprintf('Creating new install directory "%s"', $dir));
@@ -886,9 +886,9 @@ class AutoUpdate
      * @param string $dir
      * @return string
      */
-    protected function _addTrailingSlash($dir)
+    public function addTrailingSlash($dir)
     {
-        if (substr($dir, -1 != DIRECTORY_SEPARATOR))
+        if (substr($dir, -1) != DIRECTORY_SEPARATOR)
             $dir = $dir . DIRECTORY_SEPARATOR;
 
         return $dir;
