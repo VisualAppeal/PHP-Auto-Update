@@ -29,7 +29,7 @@ use \VisualAppeal\AutoUpdate;
 
 // Download the zip update files to `__DIR__ . '/temp'`
 // Copy the contents of the zip file to the current directory `__DIR__`
-// The update process should last 60 seconds
+// The update process should last 60 seconds max
 $update = new AutoUpdate(__DIR__ . '/temp', __DIR__, 60);
 $update->setCurrentVersion('0.1.0'); // Current version of your application. This value should be from a database or another file which will be updated with the installation of a new version
 $update->setUpdateUrl('http://php-auto-update.app/update/'); //Replace the url with your server update url
