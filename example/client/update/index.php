@@ -26,11 +26,14 @@ if ($update->newVersionAvailable()) {
 	}, $update->getVersionsToUpdate()));
 	echo '</pre>';
 
+	// This call will only simulate an update.
+	// Set the first argument (simulate) to "false" to install the update
+	// i.e. $update->update(false);
 	$result = $update->update();
 	if ($result === true) {
-		echo 'Update successful<br>';
+		echo 'Update simulation successful<br>';
 	} else {
-		echo 'Update failed: ' . $result . '!<br>';
+		echo 'Update simulation failed: ' . $result . '!<br>';
 
 		if ($result = AutoUpdate::ERROR_SIMULATE) {
 			echo '<pre>';
