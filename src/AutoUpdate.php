@@ -428,9 +428,9 @@ class AutoUpdate
         $versions = $this->_cache->get('update-versions');
 
         // Check if cache is empty
-        if ($versions === false) {
+        if ($versions === null) {
             // Create absolute url to update file
-            $updateFile = $this->_updateUrl . DIRECTORY_SEPARATOR . $this->_updateFile;
+            $updateFile = $this->_updateUrl . "/" . $this->_updateFile;
             if (!empty($this->_branch))
                 $updateFile .= '.' . $this->_branch;
 
