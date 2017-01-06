@@ -430,7 +430,7 @@ class AutoUpdate
         // Check if cache is empty
         if ($versions === null) {
             // Create absolute url to update file
-            $updateFile = $this->_updateUrl . "/" . $this->_updateFile;
+            $updateFile = $this->_updateUrl . '/' . $this->_updateFile;
             if (!empty($this->_branch))
                 $updateFile .= '.' . $this->_branch;
 
