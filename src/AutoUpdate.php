@@ -427,13 +427,13 @@ class AutoUpdate
 
         $versions = $this->_cache->get('update-versions');
 
+        // Create absolute url to update file
+        $updateFile = $this->_updateUrl . '/' . $this->_updateFile;
+        if (!empty($this->_branch))
+            $updateFile .= '.' . $this->_branch;
+
         // Check if cache is empty
         if ($versions === null) {
-            // Create absolute url to update file
-            $updateFile = $this->_updateUrl . '/' . $this->_updateFile;
-            if (!empty($this->_branch))
-                $updateFile .= '.' . $this->_branch;
-
             $this->_log->addDebug(sprintf('Get new updates from %s', $updateFile));
 
             // Read update file from update server
@@ -470,7 +470,7 @@ class AutoUpdate
 
                     break;
                 default:
-                    $this->_log->addInfo(sprintf('Unknown file extension "%s"', $updateFileExtension));
+                    $this->_log->addError(sprintf('Unknown file extension "%s"', $updateFileExtension));
 
                     return false;
             }
@@ -478,6 +478,12 @@ class AutoUpdate
             $this->_cache->set('update-versions', $versions);
         } else {
             $this->_log->addDebug('Got updates from cache');
+        }
+
+        if (!is_array($versions)) {
+            $this->_log->addError(sprintf('Could not read versions from server %s', $updateFile));
+
+            return false;
         }
 
         // Check for latest version
