@@ -6,11 +6,11 @@ use \VisualAppeal\AutoUpdate;
 
 $update = new AutoUpdate(__DIR__ . '/temp', __DIR__ . '/../', 60);
 $update->setCurrentVersion('0.1.0');
-$update->setUpdateUrl('http://php-auto-update.app/server'); //Replace with your server update directory
+$update->setUpdateUrl('http://127.0.0.1/PHP-Auto-Update/example/server'); //Replace with your server update directory
 
 // Optional:
 $update->addLogHandler(new Monolog\Handler\StreamHandler(__DIR__ . '/update.log'));
-$update->setCache(new Desarrolla2\Cache\Adapter\File(__DIR__ . '/cache'), 3600);
+// $update->setCache(new Desarrolla2\Cache\Adapter\File(__DIR__ . '/cache'), 3600);
 
 //Check for a new update
 if ($update->checkUpdate() === false)
