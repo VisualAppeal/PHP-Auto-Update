@@ -639,7 +639,7 @@ class AutoUpdate
                     $files[$i]['file_writable'] = false;
 
                     $simulateSuccess = false;
-                    $this->_log->addWarning('[SIMULATE] Could not overwrite "%s"!', $absoluteFilename);
+                    $this->_log->addWarning(sprintf('[SIMULATE] Could not overwrite "%s"!', $absoluteFilename));
                 }
             } else {
                 $files[$i]['file_exists'] = false;
