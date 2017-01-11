@@ -13,11 +13,15 @@ class AutoUpdateTest extends PHPUnit_Framework_TestCase
 	 */
 	private $_update = null;
 
+	/**
+	 * Setup the auto update
+	 */
 	protected function setUp()
 	{
 		$this->_update = new AutoUpdate(__DIR__ . DIRECTORY_SEPARATOR . 'temp', __DIR__ . DIRECTORY_SEPARATOR . 'install');
 		$this->_update->setCurrentVersion('0.1.0');
 		$this->_update->setUpdateUrl(__DIR__ . DIRECTORY_SEPARATOR . 'fixtures');
+		$this->_update->addLogHandler(new Monolog\Handler\StreamHandler(__DIR__ . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'update.log'));
 	}
 
 	protected function tearDown()
@@ -34,6 +38,9 @@ class AutoUpdateTest extends PHPUnit_Framework_TestCase
 		$this->assertInstanceOf('\VisualAppeal\AutoUpdate', $this->_update);
 	}
 
+	/**
+	 * Test if errors get catched if no update file was found.
+	 */
 	public function testErrorUpdateCheck()
 	{
 		$this->_update->setUpdateFile('404.json');

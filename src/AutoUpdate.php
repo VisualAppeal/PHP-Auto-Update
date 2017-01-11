@@ -433,7 +433,7 @@ class AutoUpdate
             $updateFile .= '.' . $this->_branch;
 
         // Check if cache is empty
-        if ($versions === null) {
+        if ($versions === null || $versions === false) {
             $this->_log->addDebug(sprintf('Get new updates from %s', $updateFile));
 
             // Read update file from update server
@@ -450,7 +450,7 @@ class AutoUpdate
                 case 'ini':
                     $versions = @parse_ini_string($update, true);
                     if (!is_array($versions)) {
-                        $this->_log->addInfo('Unable to parse ini update file!');
+                        $this->_log->addError('Unable to parse ini update file!');
 
                         return false;
                     }
@@ -463,7 +463,7 @@ class AutoUpdate
                 case 'json':
                     $versions = (array)@json_decode($update);
                     if (!is_array($versions)) {
-                        $this->_log->addInfo('Unable to parse json update file!');
+                        $this->_log->addError('Unable to parse json update file!');
 
                         return false;
                     }
