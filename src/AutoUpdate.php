@@ -640,7 +640,6 @@ class AutoUpdate
 
             // Write to file
             if (file_exists($absoluteFilename)) {
-                if(is_dir($absoluteFilename)) continue;
                 $files[$i]['file_exists'] = true;
                 if (!is_writable($absoluteFilename)) {
                     $files[$i]['file_writable'] = false;
@@ -739,6 +738,7 @@ class AutoUpdate
 
             // Write to file
             if (file_exists($absoluteFilename)) {
+                if(is_dir($absoluteFilename)) continue;
                 if (!is_writable($absoluteFilename)) {
                     $this->_log->addError('Could not overwrite "%s"!', $absoluteFilename);
 
