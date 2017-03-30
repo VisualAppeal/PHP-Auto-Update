@@ -1,5 +1,6 @@
 <?php namespace VisualAppeal;
 
+use Tracy\Debugger;
 use \vierbergenlars\SemVer\version;
 use \vierbergenlars\SemVer\expression;
 use \vierbergenlars\SemVer\SemVerException;
@@ -9,6 +10,9 @@ use \Desarrolla2\Cache\Adapter\NotCache;
 
 use \Monolog\Logger;
 use \Monolog\Handler\NullHandler;
+
+error_reporting(E_ALL);
+ini_set('display_errors', true);
 
 /**
  * Auto update class.
@@ -747,42 +751,55 @@ class AutoUpdate
                     return false;
                 }
             } else {
-                if (!touch($absoluteFilename)) {
-                    $this->_log->addError(sprintf('[SIMULATE] The file "%s" could not be created!', $absoluteFilename));
+                if(substr($absoluteFilename, -1) === '/') {
+                    if (!mkdir($absoluteFilename)) {
+                        $this->_log->addError(sprintf('The folder "%s" could not be created!', $absoluteFilename));
+                        zip_close($zip);
+
+                        return false;
+                    }
+
+                    $this->_log->addDebug(sprintf('Folder "%s" created', $absoluteFilename));
+                } else {
+                    if (!touch($absoluteFilename)) {
+                        $this->_log->addError(sprintf('[SIMULATE] The file "%s" could not be created!', $absoluteFilename));
+                        zip_close($zip);
+
+                        return false;
+                    }
+
+                    $this->_log->addDebug(sprintf('File "%s" created', $absoluteFilename));
+                }
+            }
+
+            if(!is_dir($absoluteFilename)) {
+                $updateHandle = @fopen($absoluteFilename, 'w');
+
+                if (!$updateHandle) {
+                    $this->_log->addError(sprintf('Could not open file "%s"!', $absoluteFilename));
                     zip_close($zip);
 
                     return false;
                 }
 
-                $this->_log->addDebug(sprintf('File "%s" created', $absoluteFilename));
-            }
+                if (fwrite($updateHandle, $contents) === false) {
+                    $this->_log->addError(sprintf('Could not write to file "%s"!', $absoluteFilename));
+                    zip_close($zip);
 
-            $updateHandle = @fopen($absoluteFilename, 'w');
+                    return false;
+                }
 
-            if (!$updateHandle) {
-                $this->_log->addError(sprintf('Could not open file "%s"!', $absoluteFilename));
-                zip_close($zip);
+                fclose($updateHandle);
 
-                return false;
-            }
+                //If file is a update script, include
+                if ($filename == $this->updateScriptName) {
+                    $this->_log->addDebug(sprintf('Try to include update script "%s"', $absoluteFilename));
+                    require($absoluteFilename);
 
-            if (!fwrite($updateHandle, $contents)) {
-                $this->_log->addError(sprintf('Could not write to file "%s"!', $absoluteFilename));
-                zip_close($zip);
-
-                return false;
-            }
-
-            fclose($updateHandle);
-
-            //If file is a update script, include
-            if ($filename == $this->updateScriptName) {
-                $this->_log->addDebug(sprintf('Try to include update script "%s"', $absoluteFilename));
-                require($absoluteFilename);
-
-                $this->_log->addInfo(sprintf('Update script "%s" included!', $absoluteFilename));
-                if (!unlink($absoluteFilename)) {
-                    $this->_log->addWarning(sprintf('Could not delete update script "%s"!', $absoluteFilename));
+                    $this->_log->addInfo(sprintf('Update script "%s" included!', $absoluteFilename));
+                    if (!unlink($absoluteFilename)) {
+                        $this->_log->addWarning(sprintf('Could not delete update script "%s"!', $absoluteFilename));
+                    }
                 }
             }
         }
