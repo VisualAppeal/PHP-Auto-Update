@@ -1,6 +1,5 @@
 <?php namespace VisualAppeal;
 
-use Tracy\Debugger;
 use \vierbergenlars\SemVer\version;
 use \vierbergenlars\SemVer\expression;
 use \vierbergenlars\SemVer\SemVerException;
@@ -10,9 +9,6 @@ use \Desarrolla2\Cache\Adapter\NotCache;
 
 use \Monolog\Logger;
 use \Monolog\Handler\NullHandler;
-
-error_reporting(E_ALL);
-ini_set('display_errors', true);
 
 /**
  * Auto update class.
