@@ -766,10 +766,16 @@ class AutoUpdate
             }
 
             if (!fwrite($updateHandle, $contents)) {
+                  // try agin
+                if(!file_put_contents($absoluteFilename,$contents)){
+
                 $this->_log->addError(sprintf('Could not write to file "%s"!', $absoluteFilename));
+
                 zip_close($zip);
 
                 return false;
+
+                }
             }
 
             fclose($updateHandle);
