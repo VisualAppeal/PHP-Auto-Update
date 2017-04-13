@@ -113,6 +113,16 @@ class AutoUpdate
      */
     private $_password = '';
 
+    /*
+     * Callbacks to be called when each update is finished
+     */
+    private $onEachUpdateFinishCallbacks = [];
+
+    /*
+     * Callbacks to be called when all updates are finished
+     */
+    private $onAllUpdateFinishCallbacks = [];
+
     /**
      * No update available.
      */
@@ -859,6 +869,7 @@ class AutoUpdate
             // Install update
             $result = $this->_install($updateFile, $simulateInstall, $update['version']);
             if ($result === true) {
+                $this->runOnEachUpdateFinishCallbacks($update['version']);
                 if ($deleteDownload) {
                     $this->_log->addDebug(sprintf('Trying to delete update file "%s" after successfull update', $updateFile));
                     if (@unlink($updateFile)) {
@@ -882,7 +893,7 @@ class AutoUpdate
                 return $result;
             }
         }
-
+        $this->runOnAllUpdateFinishCallbacks($this->getVersionsToUpdate());
         return true;
     }
 
@@ -899,4 +910,35 @@ class AutoUpdate
 
         return $dir;
     }
+
+    /**
+     * @param array $callback
+     */
+    public function onEachUpdateFinish($callback)
+    {
+        $this->onEachUpdateFinishCallbacks[] = $callback;
+    }
+
+    /**
+     * @param array $callback
+     */
+    public function setOnAllUpdateFinishCallbacks($callback)
+    {
+        $this->onAllUpdateFinishCallbacks[] = $callback;
+    }
+
+    public function runOnEachUpdateFinishCallbacks($updateVersion)
+    {
+        foreach ($this->onEachUpdateFinishCallbacks as $callback) {
+            call_user_func($callback, $updateVersion);
+        }
+    }
+
+    public function runOnAllUpdateFinishCallbacks($updatedVersions)
+    {
+        foreach ($this->onAllUpdateFinishCallbacks as $callback) {
+            call_user_func($callback, $updatedVersions);
+        }
+    }
+
 }
