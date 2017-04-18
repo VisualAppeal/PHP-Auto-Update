@@ -611,6 +611,7 @@ class AutoUpdate
 
             // Check if parent directory is writable
             if (!is_dir($foldername)) {
+                mkdir($foldername);
                 $this->_log->addDebug(sprintf('[SIMULATE] Create directory "%s"', $foldername));
                 $files[$i]['parent_folder_exists'] = false;
 
@@ -765,16 +766,21 @@ class AutoUpdate
                 return false;
             }
 
+
             if (!fwrite($updateHandle, $contents)) {
-                  // try agin
-                if(!file_put_contents($absoluteFilename,$contents)){
+                if (zip_entry_filesize($file) == 0) {
+                    if (!file_put_contents($absoluteFilename , chr(0)  )) {
 
-                $this->_log->addError(sprintf('Could not write to file "%s"!', $absoluteFilename));
-
-                zip_close($zip);
-
-                return false;
-
+                        $this->_log->addError(sprintf('Could not write to file "%s"!', $absoluteFilename));
+                        zip_close($zip);
+                        return false;
+                    }
+                }
+                else
+                {
+                        $this->_log->addError(sprintf('Could not write to file "%s"!', $absoluteFilename));
+                        zip_close($zip);
+                        return false;
                 }
             }
 
