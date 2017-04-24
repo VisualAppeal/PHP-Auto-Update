@@ -758,7 +758,7 @@ class AutoUpdate
                 }
             } else {
                 // touch will fail if PHP is not the owner of the file, and file_put_contents is faster than touch.
-                if (!file_put_contents($absoluteFilename)) {
+                if (file_put_contents($absoluteFilename, '') === false) {
                     $this->_log->addError(sprintf('[SIMULATE] The file "%s" could not be created!', $absoluteFilename));
                     zip_close($zip);
 
