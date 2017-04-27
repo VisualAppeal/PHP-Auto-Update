@@ -775,7 +775,7 @@ class AutoUpdate
                 return false;
             }
 
-            if (!fwrite($updateHandle, $contents)) {
+            if (fwrite($updateHandle, $contents) === false) {
                 $this->_log->addError(sprintf('Could not write to file "%s"!', $absoluteFilename));
                 zip_close($zip);
 
