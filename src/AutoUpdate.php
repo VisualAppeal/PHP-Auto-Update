@@ -750,7 +750,7 @@ class AutoUpdate
             // Write to file
             if (file_exists($absoluteFilename)) {
                 if (!is_writable($absoluteFilename)) {
-                    $this->_log->addError('Could not overwrite "%s"!', $absoluteFilename);
+                    $this->_log->addError(sprintf('Could not overwrite "%s"!', $absoluteFilename));
 
                     zip_close($zip);
 
