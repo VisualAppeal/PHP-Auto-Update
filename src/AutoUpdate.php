@@ -621,6 +621,7 @@ class AutoUpdate
 
             // Check if parent directory is writable
             if (!is_dir($foldername)) {
+                mkdir($foldername);
                 $this->_log->addDebug(sprintf('[SIMULATE] Create directory "%s"', $foldername));
                 $files[$i]['parent_folder_exists'] = false;
 
@@ -756,7 +757,8 @@ class AutoUpdate
                     return false;
                 }
             } else {
-                if (!touch($absoluteFilename)) {
+                // touch will fail if PHP is not the owner of the file, and file_put_contents is faster than touch.
+                if (file_put_contents($absoluteFilename, '') === false) {
                     $this->_log->addError(sprintf('[SIMULATE] The file "%s" could not be created!', $absoluteFilename));
                     zip_close($zip);
 
@@ -775,11 +777,22 @@ class AutoUpdate
                 return false;
             }
 
-            if (fwrite($updateHandle, $contents) === false) {
-                $this->_log->addError(sprintf('Could not write to file "%s"!', $absoluteFilename));
-                zip_close($zip);
 
-                return false;
+            if (!fwrite($updateHandle, $contents)) {
+                if (zip_entry_filesize($file) == 0) {
+                    if (!file_put_contents($absoluteFilename , chr(0)  )) {
+
+                        $this->_log->addError(sprintf('Could not write to file "%s"!', $absoluteFilename));
+                        zip_close($zip);
+                        return false;
+                    }
+                }
+                else
+                {
+                        $this->_log->addError(sprintf('Could not write to file "%s"!', $absoluteFilename));
+                        zip_close($zip);
+                        return false;
+                }
             }
 
             fclose($updateHandle);
