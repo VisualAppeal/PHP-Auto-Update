@@ -11,7 +11,7 @@
     "minimum-stability": "stable",
     "require": {
         "desarrolla2/cache": "2.1.*",
-        "monolog/monolog": "1.21.*",
+        "monolog/monolog": "1.22.*",
         "php": ">= 5.6.4",
         "vierbergenlars/php-semver": "3.0.*"
     },
