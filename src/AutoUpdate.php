@@ -447,7 +447,7 @@ class AutoUpdate
             $this->_log->addDebug(sprintf('Get new updates from %s', $updateFile));
 
             // Read update file from update server
-            $update = @file_get_contents($updateFile, $this->_useBasicAuth());
+            $update = @file_get_contents($updateFile, false, $this->_useBasicAuth());
             if ($update === false) {
                 $this->_log->addInfo(sprintf('Could not download update file "%s"!', $updateFile));
 
@@ -552,7 +552,7 @@ class AutoUpdate
     protected function _downloadUpdate($updateUrl, $updateFile)
     {
         $this->_log->addInfo(sprintf('Downloading update "%s" to "%s"', $updateUrl, $updateFile));
-        $update = @file_get_contents($updateUrl, $this->_useBasicAuth());
+        $update = @file_get_contents($updateUrl, false, $this->_useBasicAuth());
 
         if ($update === false) {
             $this->_log->addError(sprintf('Could not download update "%s"!', $updateUrl));
@@ -759,7 +759,7 @@ class AutoUpdate
             } else {
                 // touch will fail if PHP is not the owner of the file, and file_put_contents is faster than touch.
                 if (file_put_contents($absoluteFilename, '') === false) {
-                    $this->_log->addError(sprintf('[SIMULATE] The file "%s" could not be created!', $absoluteFilename));
+                    $this->_log->addError(sprintf('The file "%s" could not be created!', $absoluteFilename));
                     zip_close($zip);
 
                     return false;
@@ -778,21 +778,10 @@ class AutoUpdate
             }
 
 
-            if (!fwrite($updateHandle, $contents)) {
-                if (zip_entry_filesize($file) == 0) {
-                    if (!file_put_contents($absoluteFilename , chr(0)  )) {
-
-                        $this->_log->addError(sprintf('Could not write to file "%s"!', $absoluteFilename));
-                        zip_close($zip);
-                        return false;
-                    }
-                }
-                else
-                {
-                        $this->_log->addError(sprintf('Could not write to file "%s"!', $absoluteFilename));
-                        zip_close($zip);
-                        return false;
-                }
+            if (false === fwrite($updateHandle, $contents)) {
+                $this->_log->addError(sprintf('Could not write to file "%s"!', $absoluteFilename));
+                zip_close($zip);
+                return false;
             }
 
             fclose($updateHandle);
