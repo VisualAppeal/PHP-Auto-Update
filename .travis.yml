@@ -1,13 +1,17 @@
 language: php
 
+dist: trusty
+
 php:
   - 5.6
   - 7.0
   - 7.1
   - hhvm
+  - nightly
 
 before_script:
   - composer install
 
 script:
+  - travis_retry composer self-update
   - vendor/bin/phpunit -c tests/UnitTests.xml
