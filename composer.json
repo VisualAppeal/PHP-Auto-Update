@@ -1,7 +1,7 @@
 {
     "name": "visualappeal/php-auto-update",
     "description": "Autoupdater for PHP",
-    "license": "Apache-2.0",
+    "license": "MIT",
     "authors": [
         {
             "name": "Tim Helfensdörfer",
@@ -12,7 +12,7 @@
     "require": {
         "desarrolla2/cache": "2.1.*",
         "monolog/monolog": "1.23.*",
-        "php": ">= 5.6.4",
+        "php": ">= 7.0.0",
         "composer/semver": "1.4.*"
     },
     "require-dev": {
