@@ -11,12 +11,12 @@
     "minimum-stability": "stable",
     "require": {
         "desarrolla2/cache": "2.1.*",
-        "monolog/monolog": "1.22.*",
+        "monolog/monolog": "1.23.*",
         "php": ">= 5.6.4",
-        "vierbergenlars/php-semver": "3.0.*"
+        "composer/semver": "1.4.*"
     },
     "require-dev": {
-        "phpunit/phpunit": "5.7.*"
+        "phpunit/phpunit": "6.5.*"
     },
     "autoload": {
         "psr-4": {

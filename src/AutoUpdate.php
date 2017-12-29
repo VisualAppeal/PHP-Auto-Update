@@ -1,14 +1,13 @@
 <?php namespace VisualAppeal;
 
-use \vierbergenlars\SemVer\version;
-use \vierbergenlars\SemVer\expression;
-use \vierbergenlars\SemVer\SemVerException;
+use Composer\Semver\Comparator;
+use Composer\Semver\Semver;
 
-use \Desarrolla2\Cache\Cache;
-use \Desarrolla2\Cache\Adapter\NotCache;
+use Desarrolla2\Cache\Cache;
+use Desarrolla2\Cache\Adapter\NotCache;
 
-use \Monolog\Logger;
-use \Monolog\Handler\NullHandler;
+use Monolog\Logger;
+use Monolog\Handler\NullHandler;
 
 /**
  * Auto update class.
@@ -18,7 +17,7 @@ class AutoUpdate
     /**
      * The latest version.
      *
-     * @var vierbergenlars\SemVer\version
+     * @var string
      */
     private $_latestVersion = null;
 
@@ -81,7 +80,7 @@ class AutoUpdate
     /**
      * Current version.
      *
-     * @var vierbergenlars\SemVer\version
+     * @var string
      */
     protected $_currentVersion = null;
 
@@ -184,8 +183,8 @@ class AutoUpdate
         $this->setTempDir(($tempDir !== null) ? $tempDir : __DIR__ . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR);
         $this->setInstallDir(($installDir !== null) ? $installDir : __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR);
 
-        $this->_latestVersion = new version('0.0.0');
-        $this->_currentVersion = new version('0.0.0');
+        $this->_latestVersion = '0.0.0';
+        $this->_currentVersion = '0.0.0';
 
         // Init cache
         $this->_cache = new Cache(new NotCache());
@@ -306,14 +305,7 @@ class AutoUpdate
      */
     public function setCurrentVersion($currentVersion)
     {
-        $version = new version($currentVersion);
-        if ($version->valid() === null) {
-            $this->_log->addError(sprintf('Invalid current version "%s"', $currentVersion));
-
-            return false;
-        }
-
-        $this->_currentVersion = $version;
+        $this->_currentVersion = $currentVersion;
 
         return $this;
     }
@@ -362,7 +354,7 @@ class AutoUpdate
     /**
      * Get the name of the latest version.
      *
-     * @return vierbergenlars\SemVer\version
+     * @return string
      */
     public function getLatestVersion()
     {
@@ -376,9 +368,13 @@ class AutoUpdate
      */
     public function getVersionsToUpdate()
     {
-        return array_map(function ($update) {
-            return $update['version'];
-        }, $this->_updates);
+        if (count($this->_updates) > 0) {
+            return array_map(function ($update) {
+                return $update['version'];
+            }, $this->_updates);
+        }
+
+        return [];
     }
 
     /**
@@ -432,7 +428,7 @@ class AutoUpdate
         $this->_log->addNotice('Checking for a new update...');
 
         // Reset previous updates
-        $this->_latestVersion = new version('0.0.0');
+        $this->_latestVersion = '0.0.0';
         $this->_updates = [];
 
         $versions = $this->_cache->get('update-versions');
@@ -497,15 +493,9 @@ class AutoUpdate
         }
 
         // Check for latest version
-        foreach ($versions as $versionRaw => $updateUrl) {
-            $version = new version($versionRaw);
-            if ($version->valid() === null) {
-                $this->_log->addInfo(sprintf('Could not parse version "%s" from update server "%s"', $versionRaw, $updateFile));
-                continue;
-            }
-
-            if (version::gt($version, $this->_currentVersion)) {
-                if (version::gt($version, $this->_latestVersion))
+        foreach ($versions as $version => $updateUrl) {
+            if (Comparator::greaterThan($version, $this->_currentVersion)) {
+                if (Comparator::greaterThan($version, $this->_latestVersion))
                     $this->_latestVersion = $version;
 
                 $this->_updates[] = [
@@ -517,7 +507,11 @@ class AutoUpdate
 
         // Sort versions to install
         usort($this->_updates, function ($a, $b) {
-            return version::compare($a['version'], $b['version']);
+            if (Comparator::equalTo($a['version'], $b['version'])) {
+                return 0;
+            }
+
+            return Comparator::lessThan($a['version'], $b['version']) ? -1 : 1;
         });
 
         if ($this->newVersionAvailable()) {
@@ -538,7 +532,7 @@ class AutoUpdate
      */
     public function newVersionAvailable()
     {
-        return version::gt($this->_latestVersion, $this->_currentVersion);
+        return Comparator::greaterThan($this->_latestVersion, $this->_currentVersion);
     }
 
     /**
