@@ -406,10 +406,11 @@ class AutoUpdate
 
         $objects = array_diff(scandir($dir), array('.', '..'));
         foreach ($objects as $object) {
-            if (is_dir($dir . DIRECTORY_SEPARATOR . $object))
+            if (is_dir($dir . DIRECTORY_SEPARATOR . $object)) {
                 $this->_removeDir($dir . DIRECTORY_SEPARATOR . $object);
-            else
+            } else {
                 unlink($dir . DIRECTORY_SEPARATOR . $object);
+            }
         }
 
         return rmdir($dir);
@@ -435,8 +436,9 @@ class AutoUpdate
 
         // Create absolute url to update file
         $updateFile = $this->_updateUrl . '/' . $this->_updateFile;
-        if (!empty($this->_branch))
+        if (!empty($this->_branch)) {
             $updateFile .= '.' . $this->_branch;
+        }
 
         // Check if cache is empty
         if ($versions === null || $versions === false) {
@@ -495,8 +497,9 @@ class AutoUpdate
         // Check for latest version
         foreach ($versions as $version => $updateUrl) {
             if (Comparator::greaterThan($version, $this->_currentVersion)) {
-                if (Comparator::greaterThan($version, $this->_latestVersion))
+                if (Comparator::greaterThan($version, $this->_latestVersion)) {
                     $this->_latestVersion = $version;
+                }
 
                 $this->_updates[] = [
                     'version' => $version,
@@ -631,8 +634,9 @@ class AutoUpdate
             }
 
             // Skip if entry is a directory
-            if (substr($filename, -1, 1) == DIRECTORY_SEPARATOR)
+            if (substr($filename, -1, 1) == DIRECTORY_SEPARATOR) {
                 continue;
+            }
 
             // Read file contents from archive
             $contents = zip_entry_read($file, zip_entry_filesize($file));
@@ -715,10 +719,9 @@ class AutoUpdate
 
         // Read every file from archive
         while ($file = zip_read($zip)) {
-            $filename = zip_entry_name($file);
-            $foldername = $this->_installDir . dirname($filename);
-            $absoluteFilename = $this->_installDir . $filename;
-
+            $filename = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, zip_entry_name($file));
+            $foldername = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $this->_installDir . dirname($filename));
+            $absoluteFilename = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $this->_installDir . $filename);
             $this->_log->addDebug(sprintf('Updating file "%s"', $filename));
 
             if (!is_dir($foldername)) {
@@ -730,8 +733,9 @@ class AutoUpdate
             }
 
             // Skip if entry is a directory
-            if (substr($filename, -1, 1) == DIRECTORY_SEPARATOR)
+            if (substr($filename, -1, 1) == DIRECTORY_SEPARATOR) {
                 continue;
+            }
 
             // Read file contents from archive
             $contents = zip_entry_read($file, zip_entry_filesize($file));
@@ -814,8 +818,9 @@ class AutoUpdate
         $this->_log->addInfo('Trying to perform update');
 
         // Check for latest version
-        if ($this->_latestVersion === null || count($this->_updates) === 0)
+        if ($this->_latestVersion === null || count($this->_updates) === 0) {
             $this->checkUpdate();
+        }
 
         if ($this->_latestVersion === null || count($this->_updates) === 0) {
             $this->_log->addError('Could not get latest version from server!');
@@ -901,8 +906,9 @@ class AutoUpdate
      */
     public function addTrailingSlash($dir)
     {
-        if (substr($dir, -1) != DIRECTORY_SEPARATOR)
+        if (substr($dir, -1) != DIRECTORY_SEPARATOR) {
             $dir = $dir . DIRECTORY_SEPARATOR;
+        }
 
         return $dir;
     }
@@ -936,5 +942,4 @@ class AutoUpdate
             call_user_func($callback, $updatedVersions);
         }
     }
-
 }
