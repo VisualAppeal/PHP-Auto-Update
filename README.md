@@ -46,8 +46,16 @@ if ($update->checkUpdate() === false)
 
 // Check if new update is available
 if ($update->newVersionAvailable()) {
+    echo 'New Version: ' . $update->getLatestVersion();
+    // Simulate or install?
+    $simulate = true;
 	//Install new update
-	echo 'New Version: ' . $update->getLatestVersion();
+    $result = $update->update($simulate);
+    if ($result === true) {
+        echo 'Update simulation successful<br>';
+    } else {
+        echo 'Update simulation failed: ' . $result . '!<br>';
+    }
 } else {
 	// No new update
 	echo 'Your application is up to date';
