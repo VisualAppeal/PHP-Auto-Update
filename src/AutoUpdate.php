@@ -701,13 +701,21 @@ class AutoUpdate
         $this->_log->addNotice(sprintf('Trying to install update "%s"', $updateFile));
 
         // Check if install should be simulated
-        if ($simulateInstall && !$this->_simulateInstall($updateFile)) {
-            $this->_log->addCritical('Simulation of update process failed!');
+        if ($simulateInstall) {
+            if ($this->_simulateInstall($updateFile)) {
+                $this->_log->addNotice(sprintf('Simulation of update "%s" process succeeded', $version));
+
+                return true;
+            }
+
+            $this->_log->addCritical(sprintf('Simulation of update  "%s" process failed!', $version));
 
             return self::ERROR_SIMULATE;
         }
 
         clearstatcache();
+
+        // Install only if simulateInstall === false
 
         // Check if zip file could be opened
         $zip = zip_open($updateFile);
