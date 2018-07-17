@@ -445,7 +445,15 @@ class AutoUpdate
             $this->_log->addDebug(sprintf('Get new updates from %s', $updateFile));
 
             // Read update file from update server
-            $update = @file_get_contents($updateFile, false, $this->_useBasicAuth());
+            if (function_exists('curl_version')) {
+                $curl = curl_init();
+                curl_setopt($curl, CURLOPT_URL, $updateFile);
+                curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+                $update = curl_exec($curl);
+                curl_close($curl);
+            } elseif (ini_get('allow_url_fopen')) {
+                $update = @file_get_contents($updateFile, false, $this->_useBasicAuth());
+            }
             if ($update === false) {
                 $this->_log->addInfo(sprintf('Could not download update file "%s"!', $updateFile));
 
@@ -549,7 +557,15 @@ class AutoUpdate
     protected function _downloadUpdate($updateUrl, $updateFile)
     {
         $this->_log->addInfo(sprintf('Downloading update "%s" to "%s"', $updateUrl, $updateFile));
-        $update = @file_get_contents($updateUrl, false, $this->_useBasicAuth());
+        if (function_exists('curl_version')) {
+            $curl = curl_init();
+            curl_setopt($curl, CURLOPT_URL, $updateUrl);
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+            $update = curl_exec($curl);
+            curl_close($curl);
+        } elseif (ini_get('allow_url_fopen')) {
+            $update = @file_get_contents($updateUrl, false, $this->_useBasicAuth());
+        }
 
         if ($update === false) {
             $this->_log->addError(sprintf('Could not download update "%s"!', $updateUrl));
