@@ -445,11 +445,18 @@ class AutoUpdate
             $this->_log->addDebug(sprintf('Get new updates from %s', $updateFile));
 
             // Read update file from update server
-            $update = @file_get_contents($updateFile, false, $this->_useBasicAuth());
-            if ($update === false) {
-                $this->_log->addInfo(sprintf('Could not download update file "%s"!', $updateFile));
+            if (function_exists('curl_version') && $this->_isValidUrl($updateFile)) {
+                $update = $this->_downloadCurl($updateUrl);
+                if ($update === false) {
+                    return false;
+                }
+            } else {
+                $update = @file_get_contents($updateFile, false, $this->_useBasicAuth());
+                if ($update === false) {
+                    $this->_log->addError(sprintf('Could not download update file "%s"!', $updateFile));
 
-                return false;
+                    return false;
+                }
             }
 
             // Parse update file
@@ -539,6 +546,50 @@ class AutoUpdate
     }
 
     /**
+     * Check if url is valid.
+     *
+     * @param string $url
+     *
+     * @return boolean
+     */
+    protected function _isValidUrl($url)
+    {
+        return (filter_var($url, FILTER_VALIDATE_URL) !== false);
+    }
+
+    /**
+     * Download file via curl.
+     *
+     * @param string $url URL to file
+     *
+     * @return string|false
+     */
+    protected function _downloadCurl($url)
+    {
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_URL, $updateUrl);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        $update = curl_exec($curl);
+
+        $error = false;
+        if (curl_error($ch)) {
+            $error = true;
+            $this->_log->addError(sprintf(
+                'Could not download update "%s" via curl: %s!',
+                $updateUrl,
+                curl_error($ch)
+            ));
+        }
+        curl_close($curl);
+
+        if ($error === true) {
+            return false;
+        }
+
+        return $update;
+    }
+
+    /**
      * Download the update
      *
      * @param string $updateUrl Url where to download from
@@ -549,16 +600,21 @@ class AutoUpdate
     protected function _downloadUpdate($updateUrl, $updateFile)
     {
         $this->_log->addInfo(sprintf('Downloading update "%s" to "%s"', $updateUrl, $updateFile));
-        $update = @file_get_contents($updateUrl, false, $this->_useBasicAuth());
+        if (function_exists('curl_version') && $this->_isValidUrl($updateUrl)) {
+            $update = $this->_downloadCurl($updateUrl);
+            if ($update === false) {
+                return false;
+            }
+        } elseif (ini_get('allow_url_fopen')) {
+            $update = @file_get_contents($updateUrl, false, $this->_useBasicAuth());
+            if ($update === false) {
+                $this->_log->addError(sprintf('Could not download update "%s"!', $updateUrl));
 
-        if ($update === false) {
-            $this->_log->addError(sprintf('Could not download update "%s"!', $updateUrl));
-
-            return false;
+                return false;
+            }
         }
 
         $handle = fopen($updateFile, 'w');
-
         if (!$handle) {
             $this->_log->addError(sprintf('Could not open file handle to save update to "%s"!', $updateFile));
 
