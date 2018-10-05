@@ -4,6 +4,7 @@ require(__DIR__ . '/../vendor/autoload.php');
 
 use PHPUnit\Framework\TestCase;
 use VisualAppeal\AutoUpdate;
+use VisualAppeal\Exceptions\DownloadException;
 
 class AutoUpdateTest extends TestCase
 {
@@ -47,10 +48,11 @@ class AutoUpdateTest extends TestCase
      */
     public function testErrorUpdateCheck()
     {
+        $this->expectException(DownloadException::class);
+
         $this->_update->setUpdateFile('404.json');
         $response = $this->_update->checkUpdate();
 
-        $this->assertEquals(false, $response);
         $this->assertFalse($this->_update->newVersionAvailable());
         $this->assertEquals(0, count($this->_update->getVersionsToUpdate()));
     }

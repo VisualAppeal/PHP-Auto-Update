@@ -9,6 +9,8 @@ use Desarrolla2\Cache\Adapter\NotCache;
 use Monolog\Logger;
 use Monolog\Handler\NullHandler;
 
+use VisualAppeal\Exceptions\DownloadException;
+
 /**
  * Auto update class.
  */
@@ -172,7 +174,7 @@ class AutoUpdate
      *
      * @param string $tempDir
      * @param string $installDir
-     * @param int    $maxExecutionTime
+     * @param int $maxExecutionTime
      */
     public function __construct($tempDir = null, $installDir = null, $maxExecutionTime = 60)
     {
@@ -196,7 +198,7 @@ class AutoUpdate
      * Set the temporary download directory.
      *
      * @param string $dir
-     * @return $this|void
+     * @return bool
      */
     public function setTempDir($dir)
     {
@@ -208,20 +210,20 @@ class AutoUpdate
             if (!mkdir($dir, 0755, true)) {
                 $this->_log->addCritical(sprintf('Could not create temporary directory "%s"', $dir));
 
-                return;
+                return false;
             }
         }
 
         $this->_tempDir = $dir;
 
-        return $this;
+        return true;
     }
 
     /**
      * Set the install directory.
      *
      * @param string $dir
-     * @return $this|void
+     * @return bool
      */
     public function setInstallDir($dir)
     {
@@ -233,13 +235,13 @@ class AutoUpdate
             if (!mkdir($dir, 0755, true)) {
                 $this->_log->addCritical(sprintf('Could not create install directory "%s"', $dir));
 
-                return;
+                return false;
             }
         }
 
         $this->_installDir = $dir;
 
-        return $this;
+        return true;
     }
 
     /**
@@ -300,8 +302,7 @@ class AutoUpdate
      * Set the version of the current installed software.
      *
      * @param string $currentVersion
-     *
-     * @return bool
+     * @return $this
      */
     public function setCurrentVersion($currentVersion)
     {
@@ -311,18 +312,23 @@ class AutoUpdate
     }
 
     /**
-     * Set authentication
-     * @param $username
-     * @param $password
+     * Set username and password for basic authentication.
+     *
+     * @param string $username
+     * @param string $password
+     * @return $this
      */
     public function setBasicAuth($username, $password)
     {
         $this->_username = $username;
         $this->_password = $password;
+
+        return $this;
     }
 
     /**
-     * Set authentication in update method of users and password exist
+     * Set authentication header if username and password exist.
+     *
      * @return null|resource
      */
     private function _useBasicAuth()
@@ -391,7 +397,6 @@ class AutoUpdate
      * Remove directory recursively.
      *
      * @param string $dir
-     *
      * @return void
      */
     private function _removeDir($dir)
@@ -447,15 +452,19 @@ class AutoUpdate
             // Read update file from update server
             if (function_exists('curl_version') && $this->_isValidUrl($updateFile)) {
                 $update = $this->_downloadCurl($updateUrl);
+
                 if ($update === false) {
-                    return false;
+                    $this->_log->addError(sprintf('Could not download update file "%s" via curl!', $updateFile));
+
+                    throw new DownloadException($updateFile);
                 }
             } else {
                 $update = @file_get_contents($updateFile, false, $this->_useBasicAuth());
-                if ($update === false) {
-                    $this->_log->addError(sprintf('Could not download update file "%s"!', $updateFile));
 
-                    return false;
+                if ($update === false) {
+                    $this->_log->addError(sprintf('Could not download update file "%s" via file_get_contents!', $updateFile));
+
+                    throw new DownloadException($updateFile);
                 }
             }
 
@@ -463,11 +472,11 @@ class AutoUpdate
             $updateFileExtension = substr(strrchr($this->_updateFile, '.'), 1);
             switch ($updateFileExtension) {
                 case 'ini':
-                    $versions = @parse_ini_string($update, true);
+                    $versions = parse_ini_string($update, true);
                     if (!is_array($versions)) {
                         $this->_log->addError('Unable to parse ini update file!');
 
-                        return false;
+                        throw new ParserException;
                     }
 
                     $versions = array_map(function ($block) {
@@ -476,18 +485,18 @@ class AutoUpdate
 
                     break;
                 case 'json':
-                    $versions = (array)@json_decode($update);
+                    $versions = (array) json_decode($update);
                     if (!is_array($versions)) {
                         $this->_log->addError('Unable to parse json update file!');
 
-                        return false;
+                        throw new ParserException;
                     }
 
                     break;
                 default:
                     $this->_log->addError(sprintf('Unknown file extension "%s"', $updateFileExtension));
 
-                    return false;
+                    throw new ParserException;
             }
 
             $this->_cache->set('update-versions', $versions);
@@ -549,7 +558,6 @@ class AutoUpdate
      * Check if url is valid.
      *
      * @param string $url
-     *
      * @return boolean
      */
     protected function _isValidUrl($url)
@@ -561,7 +569,6 @@ class AutoUpdate
      * Download file via curl.
      *
      * @param string $url URL to file
-     *
      * @return string|false
      */
     protected function _downloadCurl($url)
@@ -594,7 +601,6 @@ class AutoUpdate
      *
      * @param string $updateUrl Url where to download from
      * @param string $updateFile Path where to save the download
-     *
      * @return bool
      */
     protected function _downloadUpdate($updateUrl, $updateFile)
@@ -607,10 +613,11 @@ class AutoUpdate
             }
         } elseif (ini_get('allow_url_fopen')) {
             $update = @file_get_contents($updateUrl, false, $this->_useBasicAuth());
+
             if ($update === false) {
                 $this->_log->addError(sprintf('Could not download update "%s"!', $updateUrl));
 
-                return false;
+                throw new DownloadException($updateUrl);
             }
         }
 
@@ -637,7 +644,6 @@ class AutoUpdate
      * Simulate update process.
      *
      * @param string $updateFile
-     *
      * @return bool
      */
     protected function _simulateInstall($updateFile)
@@ -748,8 +754,7 @@ class AutoUpdate
      * Install update.
      *
      * @param string $updateFile Path to the update file
-     * @param bool   $simulateInstall Check for directory and file permissions before copying files
-     *
+     * @param bool $simulateInstall Check for directory and file permissions instead of installing the update
      * @return bool
      */
     protected function _install($updateFile, $simulateInstall, $version)
@@ -830,7 +835,7 @@ class AutoUpdate
                 $this->_log->addDebug(sprintf('File "%s" created', $absoluteFilename));
             }
 
-            $updateHandle = @fopen($absoluteFilename, 'w');
+            $updateHandle = fopen($absoluteFilename, 'w');
 
             if (!$updateHandle) {
                 $this->_log->addError(sprintf('Could not open file "%s"!', $absoluteFilename));
@@ -874,8 +879,7 @@ class AutoUpdate
      *
      * @param bool $simulateInstall Check for directory and file permissions before copying files (Default: true)
      * @param bool $deleteDownload Delete download after update (Default: true)
-     *
-     * @return mixed integer|bool
+     * @return integer|bool
      */
     public function update($simulateInstall = true, $deleteDownload = true)
     {
@@ -937,7 +941,7 @@ class AutoUpdate
                 $this->runOnEachUpdateFinishCallbacks($update['version']);
                 if ($deleteDownload) {
                     $this->_log->addDebug(sprintf('Trying to delete update file "%s" after successfull update', $updateFile));
-                    if (@unlink($updateFile)) {
+                    if (unlink($updateFile)) {
                         $this->_log->addInfo(sprintf('Update file "%s" deleted after successfull update', $updateFile));
                     } else {
                         $this->_log->addError(sprintf('Could not delete update file "%s" after successfull update!', $updateFile));
@@ -948,7 +952,7 @@ class AutoUpdate
             } else {
                 if ($deleteDownload) {
                     $this->_log->addDebug(sprintf('Trying to delete update file "%s" after failed update', $updateFile));
-                    if (@unlink($updateFile)) {
+                    if (unlink($updateFile)) {
                         $this->_log->addInfo(sprintf('Update file "%s" deleted after failed update', $updateFile));
                     } else {
                         $this->_log->addError(sprintf('Could not delete update file "%s" after failed update!', $updateFile));
@@ -958,7 +962,9 @@ class AutoUpdate
                 return $result;
             }
         }
+
         $this->runOnAllUpdateFinishCallbacks($this->getVersionsToUpdate());
+
         return true;
     }
 
@@ -978,29 +984,51 @@ class AutoUpdate
     }
 
     /**
-     * @param array $callback
+     * Add callback which is executed after each update finished.
+     *
+     * @param callable $callback
+     * @return $this
      */
     public function onEachUpdateFinish($callback)
     {
         $this->onEachUpdateFinishCallbacks[] = $callback;
+
+        return $this;
     }
 
     /**
-     * @param array $callback
+     * Add callback which is executed after all updates finished.
+     *
+     * @param callable $callback
+     * @return $this
      */
     public function setOnAllUpdateFinishCallbacks($callback)
     {
         $this->onAllUpdateFinishCallbacks[] = $callback;
+
+        return $this;
     }
 
-    public function runOnEachUpdateFinishCallbacks($updateVersion)
+    /**
+     * Run callbacks after each update finished.
+     *
+     * @param string $updateVersion
+     * @return void
+     */
+    private function runOnEachUpdateFinishCallbacks($updateVersion)
     {
         foreach ($this->onEachUpdateFinishCallbacks as $callback) {
             call_user_func($callback, $updateVersion);
         }
     }
 
-    public function runOnAllUpdateFinishCallbacks($updatedVersions)
+    /**
+     * Run callbacks after all updates finished.
+     *
+     * @param string $updatedVersions]
+     * @return void
+     */
+    private function runOnAllUpdateFinishCallbacks($updatedVersions)
     {
         foreach ($this->onAllUpdateFinishCallbacks as $callback) {
             call_user_func($callback, $updatedVersions);
