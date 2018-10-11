@@ -579,12 +579,12 @@ class AutoUpdate
         $update = curl_exec($curl);
 
         $error = false;
-        if (curl_error($ch)) {
+        if (curl_error($curl)) {
             $error = true;
             $this->_log->addError(sprintf(
                 'Could not download update "%s" via curl: %s!',
                 $updateUrl,
-                curl_error($ch)
+                curl_error($curl)
             ));
         }
         curl_close($curl);
