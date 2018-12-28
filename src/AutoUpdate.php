@@ -444,6 +444,7 @@ class AutoUpdate
                     throw new DownloadException($updateFile);
                 }
             } else {
+                // TODO: Throw exception on error
                 $update = @file_get_contents($updateFile, false, $this->_useBasicAuth());
 
                 if ($update === false) {
@@ -599,6 +600,7 @@ class AutoUpdate
                 return false;
             }
         } elseif (ini_get('allow_url_fopen')) {
+            // TODO: Throw exception on error
             $update = @file_get_contents($updateUrl, false, $this->_useBasicAuth());
 
             if ($update === false) {
