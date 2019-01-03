@@ -101,6 +101,13 @@ class AutoUpdate
     private $onAllUpdateFinishCallbacks = [];
 
     /**
+     * If curl should verify the host certificate.
+     *
+     * @var bool
+     */
+    private $sslVerifyHost = true;
+
+    /**
      * Url to the update folder on the server.
      *
      * @var string
@@ -405,6 +412,24 @@ class AutoUpdate
     }
 
     /**
+     * @return bool
+     */
+    public function getSslVerifyHost()
+    {
+        return $this->sslVerifyHost;
+    }
+
+    /**
+     * @param bool $sslVerifyHost
+     */
+    public function setSslVerifyHost($sslVerifyHost)
+    {
+        $this->sslVerifyHost = $sslVerifyHost;
+
+        return $this;
+    }
+
+    /**
      * Check for a new version
      *
      * @return int|bool
@@ -562,6 +587,8 @@ class AutoUpdate
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, $url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, $this->sslVerifyHost);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyHost);
         $update = curl_exec($curl);
 
         $error = false;
