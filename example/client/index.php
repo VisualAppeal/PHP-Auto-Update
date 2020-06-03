@@ -1,19 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 	<head>
 		<meta charset="utf-8">
 		<title>PHP Auto Update</title>
 
-		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
 	</head>
 	<body>
-		<div class="container">
+		<div class="container mt-4">
 			<p>This is the test index.</p>
 
-			<p><a class="btn btn-primary" href="update/index.php">Update now!</a></p>
+			<p><a class="btn btn-primary" href="/example/client/update/index.php">Update now!</a></p>
 
-			<p>Contents of "somefile.php":</p>
-			<pre><?php require(__DIR__ . '/somefile.php'); ?></pre>
+			<p>Contents of <code>somefile.php</code>:</p>
+			<pre><code><?php require(__DIR__ . '/somefile.php'); ?></code></pre>
 		</div>
 	</body>
 </html>

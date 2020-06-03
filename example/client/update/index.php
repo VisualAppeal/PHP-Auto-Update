@@ -6,19 +6,22 @@ use \VisualAppeal\AutoUpdate;
 
 $update = new AutoUpdate(__DIR__ . '/temp', __DIR__ . '/../', 60);
 $update->setCurrentVersion('0.1.0');
-$update->setUpdateUrl('http://php-auto-update.app/server'); //Replace with your server update directory
+// Replace with your server update directory
+$update->setUpdateUrl('http://127.0.0.1/example/server');
 
-// Optional:
+// Log handler and cache are optional
 $update->addLogHandler(new Monolog\Handler\StreamHandler(__DIR__ . '/update.log'));
-// $update->setCache(new Desarrolla2\Cache\Adapter\File(__DIR__ . '/cache'), 3600);
 
-//Check for a new update
+$cache = new Desarrolla2\Cache\File(__DIR__ . '/cache');
+$update->setCache($cache, 3600);
+
+// Check for a new update
 if ($update->checkUpdate() === false) {
     die('Could not check for updates! See log file for details.');
 }
 
 if ($update->newVersionAvailable()) {
-    //Install new update
+    // Install new update
     echo 'New Version: ' . $update->getLatestVersion() . '<br>';
     echo 'Installing Updates: <br>';
     echo '<pre>';
@@ -57,6 +60,7 @@ if ($update->newVersionAvailable()) {
     // Set the first argument (simulate) to "false" to install the update
     // i.e. $update->update(false);
     $result = $update->update();
+
     if ($result === true) {
         echo 'Update simulation successful<br>';
     } else {
