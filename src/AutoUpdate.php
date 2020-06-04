@@ -2,12 +2,15 @@
 
 use Composer\Semver\Comparator;
 
-use Desarrolla2\Cache\Cache;
-use Desarrolla2\Cache\Adapter\NotCache;
+use Desarrolla2\Cache\CacheInterface;
+use Desarrolla2\Cache\NotCache;
 
+use Exception;
+use Monolog\Handler\HandlerInterface;
 use Monolog\Logger;
 use Monolog\Handler\NullHandler;
 
+use Psr\SimpleCache\InvalidArgumentException;
 use VisualAppeal\Exceptions\DownloadException;
 use VisualAppeal\Exceptions\ParserException;
 
@@ -21,7 +24,7 @@ class AutoUpdate
      *
      * @var string
      */
-    private $latestVersion = null;
+    private $latestVersion;
 
     /**
      * Updates not yet installed.
@@ -33,16 +36,16 @@ class AutoUpdate
     /**
      * Cache for update requests.
      *
-     * @var \Desarrolla2\Cache\Cache
+     * @var CacheInterface
      */
-    private $cache = null;
+    private $cache;
 
     /**
      * Logger instance.
      *
-     * @var \Monolog\Logger
+     * @var Logger
      */
-    private $log = null;
+    private $log;
 
     /**
      * Result of simulated install.
@@ -143,14 +146,16 @@ class AutoUpdate
     public $updateScriptName = '_upgrade.php';
 
     /**
+     * How long the cache should be valid (in seconds).
+     *
+     * @var int
+     */
+    protected $cacheTtl = 3600;
+
+    /**
      * No update available.
      */
     const NO_UPDATE_AVAILABLE = 0;
-
-    /**
-     * Zip file could not be opened.
-     */
-    const ERROR_INVALID_ZIP = 10;
 
     /**
      * Could not check for last version.
@@ -178,11 +183,6 @@ class AutoUpdate
     const ERROR_DELETE_TEMP_UPDATE = 50;
 
     /**
-     * Error while installing the update.
-     */
-    const ERROR_INSTALL = 60;
-
-    /**
      * Error in simulated install.
      */
     const ERROR_SIMULATE = 70;
@@ -207,7 +207,7 @@ class AutoUpdate
         $this->currentVersion = '0.0.0';
 
         // Init cache
-        $this->cache = new Cache(new NotCache());
+        $this->cache = new NotCache();
 
         ini_set('max_execution_time', $maxExecutionTime);
     }
@@ -218,15 +218,15 @@ class AutoUpdate
      * @param string $dir
      * @return bool
      */
-    public function setTempDir($dir)
+    public function setTempDir(string $dir): bool
     {
         $dir = $this->addTrailingSlash($dir);
 
         if (!is_dir($dir)) {
-            $this->log->addDebug(sprintf('Creating new temporary directory "%s"', $dir));
+            $this->log->debug(sprintf('Creating new temporary directory "%s"', $dir));
 
             if (!mkdir($dir, 0755, true)) {
-                $this->log->addCritical(sprintf('Could not create temporary directory "%s"', $dir));
+                $this->log->critical(sprintf('Could not create temporary directory "%s"', $dir));
 
                 return false;
             }
@@ -243,15 +243,15 @@ class AutoUpdate
      * @param string $dir
      * @return bool
      */
-    public function setInstallDir($dir)
+    public function setInstallDir(string $dir): bool
     {
         $dir = $this->addTrailingSlash($dir);
 
         if (!is_dir($dir)) {
-            $this->log->addDebug(sprintf('Creating new install directory "%s"', $dir));
+            $this->log->debug(sprintf('Creating new install directory "%s"', $dir));
 
             if (!mkdir($dir, 0755, true)) {
-                $this->log->addCritical(sprintf('Could not create install directory "%s"', $dir));
+                $this->log->critical(sprintf('Could not create install directory "%s"', $dir));
 
                 return false;
             }
@@ -266,9 +266,9 @@ class AutoUpdate
      * Set the update filename.
      *
      * @param string $updateFile
-     * @return $this
+     * @return AutoUpdate
      */
-    public function setUpdateFile($updateFile)
+    public function setUpdateFile(string $updateFile): AutoUpdate
     {
         $this->updateFile = $updateFile;
 
@@ -279,9 +279,9 @@ class AutoUpdate
      * Set the update filename.
      *
      * @param string $updateUrl
-     * @return $this
+     * @return AutoUpdate
      */
-    public function setUpdateUrl($updateUrl)
+    public function setUpdateUrl(string $updateUrl): AutoUpdate
     {
         $this->updateUrl = $updateUrl;
 
@@ -292,9 +292,9 @@ class AutoUpdate
      * Set the update branch.
      *
      * @param string branch
-     * @return $this
+     * @return AutoUpdate
      */
-    public function setBranch($branch)
+    public function setBranch($branch): AutoUpdate
     {
         $this->branch = $branch;
 
@@ -304,14 +304,13 @@ class AutoUpdate
     /**
      * Set the cache component.
      *
-     * @param \Desarrolla2\Cache\Adapter\AdapterInterface $adapter See https://github.com/desarrolla2/Cache
-     * @param int $ttl Time to live in seconds
-     * @return $this
+     * @param CacheInterface $adapter See https://github.com/desarrolla2/Cache
+     * @return AutoUpdate
      */
-    public function setCache($adapter, $ttl = 3600)
+    public function setCache(CacheInterface $adapter, int $ttl): AutoUpdate
     {
-        $adapter->setOption('ttl', $ttl);
-        $this->cache = new Cache($adapter);
+        $this->cache = $adapter;
+        $this->cacheTtl = $ttl;
 
         return $this;
     }
@@ -320,9 +319,9 @@ class AutoUpdate
      * Set the version of the current installed software.
      *
      * @param string $currentVersion
-     * @return $this
+     * @return AutoUpdate
      */
-    public function setCurrentVersion($currentVersion)
+    public function setCurrentVersion(string $currentVersion): AutoUpdate
     {
         $this->currentVersion = $currentVersion;
 
@@ -334,9 +333,9 @@ class AutoUpdate
      *
      * @param string $username
      * @param string $password
-     * @return $this
+     * @return AutoUpdate
      */
-    public function setBasicAuth($username, $password)
+    public function setBasicAuth(string $username, string $password): AutoUpdate
     {
         $this->username = $username;
         $this->password = $password;
@@ -349,7 +348,7 @@ class AutoUpdate
      *
      * @return null|resource
      */
-    private function _useBasicAuth()
+    private function useBasicAuth()
     {
         if ($this->username && $this->password) {
             return stream_context_create(array(
@@ -365,10 +364,10 @@ class AutoUpdate
     /**
      * Add a new logging handler.
      *
-     * @param \Monolog\Handler\HandlerInterface $handler See https://github.com/Seldaek/monolog
-     * @return $this
+     * @param HandlerInterface $handler See https://github.com/Seldaek/monolog
+     * @return AutoUpdate
      */
-    public function addLogHandler(\Monolog\Handler\HandlerInterface $handler)
+    public function addLogHandler(HandlerInterface $handler): AutoUpdate
     {
         $this->log->pushHandler($handler);
 
@@ -380,7 +379,7 @@ class AutoUpdate
      *
      * @return string
      */
-    public function getLatestVersion()
+    public function getLatestVersion(): string
     {
         return $this->latestVersion;
     }
@@ -390,7 +389,7 @@ class AutoUpdate
      *
      * @return array
      */
-    public function getVersionsToUpdate()
+    public function getVersionsToUpdate(): array
     {
         if (count($this->updates) > 0) {
             return array_map(function ($update) {
@@ -406,7 +405,7 @@ class AutoUpdate
      *
      * @return array
      */
-    public function getSimulationResults()
+    public function getSimulationResults(): array
     {
         return $this->simulationResults;
     }
@@ -414,15 +413,16 @@ class AutoUpdate
     /**
      * @return bool
      */
-    public function getSslVerifyHost()
+    public function getSslVerifyHost(): bool
     {
         return $this->sslVerifyHost;
     }
 
     /**
      * @param bool $sslVerifyHost
+     * @return AutoUpdate
      */
-    public function setSslVerifyHost($sslVerifyHost)
+    public function setSslVerifyHost(bool $sslVerifyHost): AutoUpdate
     {
         $this->sslVerifyHost = $sslVerifyHost;
 
@@ -432,16 +432,18 @@ class AutoUpdate
     /**
      * Check for a new version
      *
+     * @param int $timeout Download timeout in seconds (Only applied for downloads via curl)
      * @return int|bool
      *         true: New version is available
      *         false: Error while checking for update
      *         int: Status code (i.e. AutoUpdate::NO_UPDATE_AVAILABLE)
      * @throws DownloadException
+     * @throws InvalidArgumentException
      * @throws ParserException
      */
-    public function checkUpdate()
+    public function checkUpdate(int $timeout = 10)
     {
-        $this->log->addNotice('Checking for a new update...');
+        $this->log->notice('Checking for a new update...');
 
         // Reset previous updates
         $this->latestVersion = '0.0.0';
@@ -457,23 +459,22 @@ class AutoUpdate
 
         // Check if cache is empty
         if ($versions === null || $versions === false) {
-            $this->log->addDebug(sprintf('Get new updates from %s', $updateFile));
+            $this->log->debug(sprintf('Get new updates from %s', $updateFile));
 
             // Read update file from update server
-            if (function_exists('curl_version') && $this->_isValidUrl($updateFile)) {
-                $update = $this->_downloadCurl($updateFile);
+            if (function_exists('curl_version') && $this->isValidUrl($updateFile)) {
+                $update = $this->downloadCurl($updateFile, $timeout);
 
                 if ($update === false) {
-                    $this->log->addError(sprintf('Could not download update file "%s" via curl!', $updateFile));
+                    $this->log->error(sprintf('Could not download update file "%s" via curl!', $updateFile));
 
                     throw new DownloadException($updateFile);
                 }
             } else {
-                // TODO: Throw exception on error
-                $update = @file_get_contents($updateFile, false, $this->_useBasicAuth());
+                $update = @file_get_contents($updateFile, false, $this->useBasicAuth());
 
                 if ($update === false) {
-                    $this->log->addError(sprintf('Could not download update file "%s" via file_get_contents!', $updateFile));
+                    $this->log->error(sprintf('Could not download update file "%s" via file_get_contents!', $updateFile));
 
                     throw new DownloadException($updateFile);
                 }
@@ -485,7 +486,7 @@ class AutoUpdate
                 case 'ini':
                     $versions = parse_ini_string($update, true);
                     if (!is_array($versions)) {
-                        $this->log->addError('Unable to parse ini update file!');
+                        $this->log->error('Unable to parse ini update file!');
 
                         throw new ParserException;
                     }
@@ -498,25 +499,25 @@ class AutoUpdate
                 case 'json':
                     $versions = (array)json_decode($update);
                     if (!is_array($versions)) {
-                        $this->log->addError('Unable to parse json update file!');
+                        $this->log->error('Unable to parse json update file!');
 
                         throw new ParserException;
                     }
 
                     break;
                 default:
-                    $this->log->addError(sprintf('Unknown file extension "%s"', $updateFileExtension));
+                    $this->log->error(sprintf('Unknown file extension "%s"', $updateFileExtension));
 
                     throw new ParserException;
             }
 
-            $this->cache->set('update-versions', $versions);
+            $this->cache->set('update-versions', $versions, $this->cacheTtl);
         } else {
-            $this->log->addDebug('Got updates from cache');
+            $this->log->debug('Got updates from cache');
         }
 
         if (!is_array($versions)) {
-            $this->log->addError(sprintf('Could not read versions from server %s', $updateFile));
+            $this->log->error(sprintf('Could not read versions from server %s', $updateFile));
 
             return false;
         }
@@ -545,11 +546,11 @@ class AutoUpdate
         });
 
         if ($this->newVersionAvailable()) {
-            $this->log->addDebug(sprintf('New version "%s" available', $this->latestVersion));
+            $this->log->debug(sprintf('New version "%s" available', $this->latestVersion));
 
             return true;
         } else {
-            $this->log->addDebug('No new version available');
+            $this->log->debug('No new version available');
 
             return self::NO_UPDATE_AVAILABLE;
         }
@@ -560,7 +561,7 @@ class AutoUpdate
      *
      * @return bool
      */
-    public function newVersionAvailable()
+    public function newVersionAvailable(): bool
     {
         return Comparator::greaterThan($this->latestVersion, $this->currentVersion);
     }
@@ -569,9 +570,9 @@ class AutoUpdate
      * Check if url is valid.
      *
      * @param string $url
-     * @return boolean
+     * @return bool
      */
-    protected function _isValidUrl($url)
+    protected function isValidUrl(string $url): bool
     {
         return (filter_var($url, FILTER_VALIDATE_URL) !== false);
     }
@@ -580,25 +581,24 @@ class AutoUpdate
      * Download file via curl.
      *
      * @param string $url URL to file
+     * @param int $timeout
      * @return string|false
      */
-    protected function _downloadCurl($url)
+    protected function downloadCurl(string $url, int $timeout = 10)
     {
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, $url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        if ($this->sslVerifyHost) {
-            curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);
-        } else {
-            curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
-        }
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, $this->sslVerifyHost ? 2 : 0);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyHost);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($curl, CURLOPT_TIMEOUT, $timeout);
         $update = curl_exec($curl);
 
-        $error = false;
+        $success = true;
         if (curl_error($curl)) {
-            $error = true;
-            $this->log->addError(sprintf(
+            $success = false;
+            $this->log->error(sprintf(
                 'Could not download update "%s" via curl: %s!',
                 $url,
                 curl_error($curl)
@@ -606,11 +606,7 @@ class AutoUpdate
         }
         curl_close($curl);
 
-        if ($error === true) {
-            return false;
-        }
-
-        return $update;
+        return ($success === true) ? $update : false;
     }
 
     /**
@@ -620,38 +616,37 @@ class AutoUpdate
      * @param string $updateFile Path where to save the download
      * @return bool
      * @throws DownloadException
-     * @throws \Exception
+     * @throws Exception
      */
-    protected function _downloadUpdate($updateUrl, $updateFile)
+    protected function downloadUpdate(string $updateUrl, string $updateFile): bool
     {
-        $this->log->addInfo(sprintf('Downloading update "%s" to "%s"', $updateUrl, $updateFile));
-        if (function_exists('curl_version') && $this->_isValidUrl($updateUrl)) {
-            $update = $this->_downloadCurl($updateUrl);
+        $this->log->info(sprintf('Downloading update "%s" to "%s"', $updateUrl, $updateFile));
+        if (function_exists('curl_version') && $this->isValidUrl($updateUrl)) {
+            $update = $this->downloadCurl($updateUrl);
             if ($update === false) {
                 return false;
             }
         } elseif (ini_get('allow_url_fopen')) {
-            // TODO: Throw exception on error
-            $update = @file_get_contents($updateUrl, false, $this->_useBasicAuth());
+            $update = @file_get_contents($updateUrl, false, $this->useBasicAuth());
 
             if ($update === false) {
-                $this->log->addError(sprintf('Could not download update "%s"!', $updateUrl));
+                $this->log->error(sprintf('Could not download update "%s"!', $updateUrl));
 
                 throw new DownloadException($updateUrl);
             }
         } else {
-            throw new \Exception('No valid download method found!');
+            throw new Exception('No valid download method found!');
         }
 
         $handle = fopen($updateFile, 'w');
         if (!$handle) {
-            $this->log->addError(sprintf('Could not open file handle to save update to "%s"!', $updateFile));
+            $this->log->error(sprintf('Could not open file handle to save update to "%s"!', $updateFile));
 
             return false;
         }
 
         if (!fwrite($handle, $update)) {
-            $this->log->addError(sprintf('Could not write update to file "%s"!', $updateFile));
+            $this->log->error(sprintf('Could not write update to file "%s"!', $updateFile));
             fclose($handle);
 
             return false;
@@ -668,15 +663,15 @@ class AutoUpdate
      * @param string $updateFile
      * @return bool
      */
-    protected function _simulateInstall($updateFile)
+    protected function simulateInstall(string $updateFile): bool
     {
-        $this->log->addNotice('[SIMULATE] Install new version');
+        $this->log->notice('[SIMULATE] Install new version');
         clearstatcache();
 
         // Check if zip file could be opened
         $zip = zip_open($updateFile);
         if (!is_resource($zip)) {
-            $this->log->addError(sprintf('Could not open zip file "%s", error: %d', $updateFile, $zip));
+            $this->log->error(sprintf('Could not open zip file "%s", error: %d', $updateFile, $zip));
 
             return false;
         }
@@ -698,12 +693,12 @@ class AutoUpdate
                 'absolute_filename' => $absoluteFilename,
             ];
 
-            $this->log->addDebug(sprintf('[SIMULATE] Updating file "%s"', $filename));
+            $this->log->debug(sprintf('[SIMULATE] Updating file "%s"', $filename));
 
             // Check if parent directory is writable
             if (!is_dir($foldername)) {
                 mkdir($foldername);
-                $this->log->addDebug(sprintf('[SIMULATE] Create directory "%s"', $foldername));
+                $this->log->debug(sprintf('[SIMULATE] Create directory "%s"', $foldername));
                 $files[$i]['parent_folder_exists'] = false;
 
                 $parent = dirname($foldername);
@@ -711,7 +706,7 @@ class AutoUpdate
                     $files[$i]['parent_folder_writable'] = false;
 
                     $simulateSuccess = false;
-                    $this->log->addWarning(sprintf('[SIMULATE] Directory "%s" has to be writeable!', $parent));
+                    $this->log->warning(sprintf('[SIMULATE] Directory "%s" has to be writeable!', $parent));
                 } else {
                     $files[$i]['parent_folder_writable'] = true;
                 }
@@ -728,7 +723,7 @@ class AutoUpdate
                 $files[$i]['extractable'] = false;
 
                 $simulateSuccess = false;
-                $this->log->addWarning(sprintf('[SIMULATE] Coud not read contents of file "%s" from zip file!', $filename));
+                $this->log->warning(sprintf('[SIMULATE] Coud not read contents of file "%s" from zip file!', $filename));
             }
 
             // Write to file
@@ -738,7 +733,7 @@ class AutoUpdate
                     $files[$i]['file_writable'] = false;
 
                     $simulateSuccess = false;
-                    $this->log->addWarning(sprintf('[SIMULATE] Could not overwrite "%s"!', $absoluteFilename));
+                    $this->log->warning(sprintf('[SIMULATE] Could not overwrite "%s"!', $absoluteFilename));
                 }
             } else {
                 $files[$i]['file_exists'] = false;
@@ -748,19 +743,19 @@ class AutoUpdate
                         $files[$i]['file_writable'] = false;
 
                         $simulateSuccess = false;
-                        $this->log->addWarning(sprintf('[SIMULATE] The file "%s" could not be created!', $absoluteFilename));
+                        $this->log->warning(sprintf('[SIMULATE] The file "%s" could not be created!', $absoluteFilename));
                     } else {
                         $files[$i]['file_writable'] = true;
                     }
                 } else {
                     $files[$i]['file_writable'] = true;
 
-                    $this->log->addDebug(sprintf('[SIMULATE] The file "%s" could be created', $absoluteFilename));
+                    $this->log->debug(sprintf('[SIMULATE] The file "%s" could be created', $absoluteFilename));
                 }
             }
 
             if ($filename == $this->updateScriptName) {
-                $this->log->addDebug(sprintf('[SIMULATE] Update script "%s" found', $absoluteFilename));
+                $this->log->debug(sprintf('[SIMULATE] Update script "%s" found', $absoluteFilename));
                 $files[$i]['update_script'] = true;
             } else {
                 $files[$i]['update_script'] = false;
@@ -777,22 +772,22 @@ class AutoUpdate
      *
      * @param string $updateFile Path to the update file
      * @param bool $simulateInstall Check for directory and file permissions instead of installing the update
-     * @param $version
+     * @param string $version
      * @return bool
      */
-    protected function _install($updateFile, $simulateInstall, $version)
+    protected function install(string $updateFile, bool $simulateInstall, string $version): bool
     {
-        $this->log->addNotice(sprintf('Trying to install update "%s"', $updateFile));
+        $this->log->notice(sprintf('Trying to install update "%s"', $updateFile));
 
         // Check if install should be simulated
         if ($simulateInstall) {
-            if ($this->_simulateInstall($updateFile)) {
-                $this->log->addNotice(sprintf('Simulation of update "%s" process succeeded', $version));
+            if ($this->simulateInstall($updateFile)) {
+                $this->log->notice(sprintf('Simulation of update "%s" process succeeded', $version));
 
                 return true;
             }
 
-            $this->log->addCritical(sprintf('Simulation of update  "%s" process failed!', $version));
+            $this->log->critical(sprintf('Simulation of update  "%s" process failed!', $version));
 
             return self::ERROR_SIMULATE;
         }
@@ -804,7 +799,7 @@ class AutoUpdate
         // Check if zip file could be opened
         $zip = zip_open($updateFile);
         if (!is_resource($zip)) {
-            $this->log->addError(sprintf('Could not open zip file "%s", error: %d', $updateFile, $zip));
+            $this->log->error(sprintf('Could not open zip file "%s", error: %d', $updateFile, $zip));
 
             return false;
         }
@@ -814,11 +809,11 @@ class AutoUpdate
             $filename = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, zip_entry_name($file));
             $foldername = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $this->installDir . dirname($filename));
             $absoluteFilename = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $this->installDir . $filename);
-            $this->log->addDebug(sprintf('Updating file "%s"', $filename));
+            $this->log->debug(sprintf('Updating file "%s"', $filename));
 
             if (!is_dir($foldername)) {
                 if (!mkdir($foldername, $this->dirPermissions, true)) {
-                    $this->log->addError(sprintf('Directory "%s" has to be writeable!', $foldername));
+                    $this->log->error(sprintf('Directory "%s" has to be writeable!', $foldername));
 
                     return false;
                 }
@@ -833,14 +828,14 @@ class AutoUpdate
             $contents = zip_entry_read($file, zip_entry_filesize($file));
 
             if ($contents === false) {
-                $this->log->addError(sprintf('Coud not read zip entry "%s"', $file));
+                $this->log->error(sprintf('Coud not read zip entry "%s"', $file));
                 continue;
             }
 
             // Write to file
             if (file_exists($absoluteFilename)) {
                 if (!is_writable($absoluteFilename)) {
-                    $this->log->addError(sprintf('Could not overwrite "%s"!', $absoluteFilename));
+                    $this->log->error(sprintf('Could not overwrite "%s"!', $absoluteFilename));
 
                     zip_close($zip);
 
@@ -849,19 +844,19 @@ class AutoUpdate
             } else {
                 // touch will fail if PHP is not the owner of the file, and file_put_contents is faster than touch.
                 if (file_put_contents($absoluteFilename, '') === false) {
-                    $this->log->addError(sprintf('The file "%s" could not be created!', $absoluteFilename));
+                    $this->log->error(sprintf('The file "%s" could not be created!', $absoluteFilename));
                     zip_close($zip);
 
                     return false;
                 }
 
-                $this->log->addDebug(sprintf('File "%s" created', $absoluteFilename));
+                $this->log->debug(sprintf('File "%s" created', $absoluteFilename));
             }
 
             $updateHandle = fopen($absoluteFilename, 'w');
 
             if (!$updateHandle) {
-                $this->log->addError(sprintf('Could not open file "%s"!', $absoluteFilename));
+                $this->log->error(sprintf('Could not open file "%s"!', $absoluteFilename));
                 zip_close($zip);
 
                 return false;
@@ -869,7 +864,7 @@ class AutoUpdate
 
 
             if (false === fwrite($updateHandle, $contents)) {
-                $this->log->addError(sprintf('Could not write to file "%s"!', $absoluteFilename));
+                $this->log->error(sprintf('Could not write to file "%s"!', $absoluteFilename));
                 zip_close($zip);
                 return false;
             }
@@ -878,19 +873,19 @@ class AutoUpdate
 
             //If file is a update script, include
             if ($filename == $this->updateScriptName) {
-                $this->log->addDebug(sprintf('Try to include update script "%s"', $absoluteFilename));
+                $this->log->debug(sprintf('Try to include update script "%s"', $absoluteFilename));
                 require($absoluteFilename);
 
-                $this->log->addInfo(sprintf('Update script "%s" included!', $absoluteFilename));
+                $this->log->info(sprintf('Update script "%s" included!', $absoluteFilename));
                 if (!unlink($absoluteFilename)) {
-                    $this->log->addWarning(sprintf('Could not delete update script "%s"!', $absoluteFilename));
+                    $this->log->warning(sprintf('Could not delete update script "%s"!', $absoluteFilename));
                 }
             }
         }
 
         zip_close($zip);
 
-        $this->log->addNotice(sprintf('Update "%s" successfully installed', $version));
+        $this->log->notice(sprintf('Update "%s" successfully installed', $version));
 
         return true;
     }
@@ -904,10 +899,11 @@ class AutoUpdate
      * @return integer|bool
      * @throws DownloadException
      * @throws ParserException
+     * @throws InvalidArgumentException
      */
-    public function update($simulateInstall = true, $deleteDownload = true)
+    public function update(bool $simulateInstall = true, bool $deleteDownload = true)
     {
-        $this->log->addInfo('Trying to perform update');
+        $this->log->info('Trying to perform update');
 
         // Check for latest version
         if ($this->latestVersion === null || count($this->updates) === 0) {
@@ -915,31 +911,31 @@ class AutoUpdate
         }
 
         if ($this->latestVersion === null || count($this->updates) === 0) {
-            $this->log->addError('Could not get latest version from server!');
+            $this->log->error('Could not get latest version from server!');
 
             return self::ERROR_VERSION_CHECK;
         }
 
         // Check if current version is up to date
         if (!$this->newVersionAvailable()) {
-            $this->log->addWarning('No update available!');
+            $this->log->warning('No update available!');
 
             return self::NO_UPDATE_AVAILABLE;
         }
 
         foreach ($this->updates as $update) {
-            $this->log->addDebug(sprintf('Update to version "%s"', $update['version']));
+            $this->log->debug(sprintf('Update to version "%s"', $update['version']));
 
             // Check for temp directory
             if (empty($this->tempDir) || !is_dir($this->tempDir) || !is_writable($this->tempDir)) {
-                $this->log->addCritical(sprintf('Temporary directory "%s" does not exist or is not writeable!', $this->tempDir));
+                $this->log->critical(sprintf('Temporary directory "%s" does not exist or is not writeable!', $this->tempDir));
 
                 return self::ERROR_TEMP_DIR;
             }
 
             // Check for install directory
             if (empty($this->installDir) || !is_dir($this->installDir) || !is_writable($this->installDir)) {
-                $this->log->addCritical(sprintf('Install directory "%s" does not exist or is not writeable!', $this->installDir));
+                $this->log->critical(sprintf('Install directory "%s" does not exist or is not writeable!', $this->installDir));
 
                 return self::ERROR_INSTALL_DIR;
             }
@@ -948,38 +944,38 @@ class AutoUpdate
 
             // Download update
             if (!is_file($updateFile)) {
-                if (!$this->_downloadUpdate($update['url'], $updateFile)) {
-                    $this->log->addCritical(sprintf('Failed to download update from "%s" to "%s"!', $update['url'], $updateFile));
+                if (!$this->downloadUpdate($update['url'], $updateFile)) {
+                    $this->log->critical(sprintf('Failed to download update from "%s" to "%s"!', $update['url'], $updateFile));
 
                     return self::ERROR_DOWNLOAD_UPDATE;
                 }
 
-                $this->log->addDebug(sprintf('Latest update downloaded to "%s"', $updateFile));
+                $this->log->debug(sprintf('Latest update downloaded to "%s"', $updateFile));
             } else {
-                $this->log->addInfo(sprintf('Latest update already downloaded to "%s"', $updateFile));
+                $this->log->info(sprintf('Latest update already downloaded to "%s"', $updateFile));
             }
 
             // Install update
-            $result = $this->_install($updateFile, $simulateInstall, $update['version']);
+            $result = $this->install($updateFile, $simulateInstall, $update['version']);
             if ($result === true) {
-                $this->runOnEachUpdateFinishCallbacks($update['version']);
+                $this->runOnEachUpdateFinishCallbacks($update['version'], $simulateInstall);
                 if ($deleteDownload) {
-                    $this->log->addDebug(sprintf('Trying to delete update file "%s" after successfull update', $updateFile));
+                    $this->log->debug(sprintf('Trying to delete update file "%s" after successfull update', $updateFile));
                     if (unlink($updateFile)) {
-                        $this->log->addInfo(sprintf('Update file "%s" deleted after successfull update', $updateFile));
+                        $this->log->info(sprintf('Update file "%s" deleted after successfull update', $updateFile));
                     } else {
-                        $this->log->addError(sprintf('Could not delete update file "%s" after successfull update!', $updateFile));
+                        $this->log->error(sprintf('Could not delete update file "%s" after successfull update!', $updateFile));
 
                         return self::ERROR_DELETE_TEMP_UPDATE;
                     }
                 }
             } else {
                 if ($deleteDownload) {
-                    $this->log->addDebug(sprintf('Trying to delete update file "%s" after failed update', $updateFile));
+                    $this->log->debug(sprintf('Trying to delete update file "%s" after failed update', $updateFile));
                     if (unlink($updateFile)) {
-                        $this->log->addInfo(sprintf('Update file "%s" deleted after failed update', $updateFile));
+                        $this->log->info(sprintf('Update file "%s" deleted after failed update', $updateFile));
                     } else {
-                        $this->log->addError(sprintf('Could not delete update file "%s" after failed update!', $updateFile));
+                        $this->log->error(sprintf('Could not delete update file "%s" after failed update!', $updateFile));
                     }
                 }
 
@@ -998,7 +994,7 @@ class AutoUpdate
      * @param string $dir
      * @return string
      */
-    public function addTrailingSlash($dir)
+    public function addTrailingSlash(string $dir): string
     {
         if (substr($dir, -1) != DIRECTORY_SEPARATOR) {
             $dir = $dir . DIRECTORY_SEPARATOR;
@@ -1013,7 +1009,7 @@ class AutoUpdate
      * @param callable $callback
      * @return $this
      */
-    public function onEachUpdateFinish($callback)
+    public function onEachUpdateFinish(callable $callback)
     {
         $this->onEachUpdateFinishCallbacks[] = $callback;
 
@@ -1026,7 +1022,7 @@ class AutoUpdate
      * @param callable $callback
      * @return $this
      */
-    public function setOnAllUpdateFinishCallbacks($callback)
+    public function setOnAllUpdateFinishCallbacks(callable $callback)
     {
         $this->onAllUpdateFinishCallbacks[] = $callback;
 
@@ -1037,12 +1033,13 @@ class AutoUpdate
      * Run callbacks after each update finished.
      *
      * @param string $updateVersion
+     * @param bool $simulate
      * @return void
      */
-    private function runOnEachUpdateFinishCallbacks($updateVersion)
+    private function runOnEachUpdateFinishCallbacks(string $updateVersion, bool $simulate)
     {
         foreach ($this->onEachUpdateFinishCallbacks as $callback) {
-            call_user_func($callback, $updateVersion);
+            call_user_func($callback, $updateVersion, $simulate);
         }
     }
 

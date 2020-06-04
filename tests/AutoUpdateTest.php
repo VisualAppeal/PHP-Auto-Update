@@ -3,22 +3,24 @@
 require(__DIR__ . '/../vendor/autoload.php');
 
 use PHPUnit\Framework\TestCase;
+
 use VisualAppeal\AutoUpdate;
 use VisualAppeal\Exceptions\DownloadException;
+use VisualAppeal\Exceptions\ParserException;
 
 class AutoUpdateTest extends TestCase
 {
     /**
      * AutoUpdate instance.
      *
-     * @var \VisualAppeal\AutoUpdate
+     * @var AutoUpdate
      */
     private $_update = null;
 
     /**
      * Setup the auto update.
      */
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->_update = new AutoUpdate(__DIR__ . DIRECTORY_SEPARATOR . 'temp', __DIR__ . DIRECTORY_SEPARATOR . 'install');
         $this->_update->setCurrentVersion('0.1.0');
@@ -29,7 +31,7 @@ class AutoUpdateTest extends TestCase
     /**
      * Unset the auto update.
      */
-    protected function tearDown()
+    protected function tearDown(): void
     {
         unset($this->_update);
         $this->_update = null;
@@ -45,20 +47,25 @@ class AutoUpdateTest extends TestCase
 
     /**
      * Test if errors get catched if no update file was found.
+     *
+     * @throws ParserException
      */
     public function testErrorUpdateCheck()
     {
         $this->expectException(DownloadException::class);
 
         $this->_update->setUpdateFile('404.json');
-        $response = $this->_update->checkUpdate();
+        $this->_update->checkUpdate();
 
         $this->assertFalse($this->_update->newVersionAvailable());
-        $this->assertEquals(0, count($this->_update->getVersionsToUpdate()));
+        $this->assertCount(0, $this->_update->getVersionsToUpdate());
     }
 
     /**
      * Test if new update is available with a json file.
+     *
+     * @throws DownloadException
+     * @throws ParserException
      */
     public function testJsonNewVersion()
     {
@@ -70,13 +77,16 @@ class AutoUpdateTest extends TestCase
         $this->assertEquals('0.2.1', $this->_update->getLatestVersion());
 
         $newVersions = $this->_update->getVersionsToUpdate();
-        $this->assertEquals(2, count($newVersions));
+        $this->assertCount(2, $newVersions);
         $this->assertEquals('0.2.0', $newVersions[0]);
         $this->assertEquals('0.2.1', $newVersions[1]);
     }
 
     /**
      * Test if NO new update is available with a json file.
+     *
+     * @throws DownloadException
+     * @throws ParserException
      */
     public function testJsonNoNewVersion()
     {
@@ -85,11 +95,14 @@ class AutoUpdateTest extends TestCase
 
         $this->assertEquals(AutoUpdate::NO_UPDATE_AVAILABLE, $response);
         $this->assertFalse($this->_update->newVersionAvailable());
-        $this->assertEquals(0, count($this->_update->getVersionsToUpdate()));
+        $this->assertCount(0, $this->_update->getVersionsToUpdate());
     }
 
     /**
      * Test if new update is available with a ini file.
+     *
+     * @throws DownloadException
+     * @throws ParserException
      */
     public function testIniNewVersion()
     {
@@ -101,13 +114,16 @@ class AutoUpdateTest extends TestCase
         $this->assertEquals('0.2.1', $this->_update->getLatestVersion());
 
         $newVersions = $this->_update->getVersionsToUpdate();
-        $this->assertEquals(2, count($newVersions));
+        $this->assertCount(2, $newVersions);
         $this->assertEquals('0.2.0', $newVersions[0]);
         $this->assertEquals('0.2.1', $newVersions[1]);
     }
 
     /**
      * Test if NO new update is available with a ini file.
+     *
+     * @throws DownloadException
+     * @throws ParserException
      */
     public function testIniNoNewVersion()
     {
@@ -116,11 +132,14 @@ class AutoUpdateTest extends TestCase
 
         $this->assertEquals(AutoUpdate::NO_UPDATE_AVAILABLE, $response);
         $this->assertFalse($this->_update->newVersionAvailable());
-        $this->assertEquals(0, count($this->_update->getVersionsToUpdate()));
+        $this->assertCount(0, $this->_update->getVersionsToUpdate());
     }
 
     /**
      * Ensure that a new dev version is available.
+     *
+     * @throws DownloadException
+     * @throws ParserException
      */
     public function testBranchDev()
     {
@@ -133,6 +152,9 @@ class AutoUpdateTest extends TestCase
 
     /**
      * Ensure that no new master version is available
+     *
+     * @throws DownloadException
+     * @throws ParserException
      */
     public function testBranchMaster()
     {

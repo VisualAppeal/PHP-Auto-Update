@@ -3,12 +3,11 @@ language: php
 dist: trusty
 
 php:
-  - 7.1
-  - 7.2
   - 7.3
+  - 7.4
 
 before_script:
-  - composer install
+  - composer install --ignore-platform-reqs
 
 script:
   - travis_retry composer self-update
