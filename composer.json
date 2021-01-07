@@ -13,7 +13,7 @@
         "ext-json": "*",
         "ext-curl": "*",
         "ext-zip": "*",
-        "php": "^7.2.0",
+        "php": ">=7.2.0",
         "desarrolla2/cache": "^3.0.0",
         "monolog/monolog": "^2.1.0",
         "composer/semver": "^3.0.0"
