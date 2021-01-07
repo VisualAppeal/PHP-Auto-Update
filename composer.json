@@ -27,6 +27,9 @@
             "VisualAppeal\\": "src/"
         }
     },
+    "scripts": {
+        "test": "phpunit -c tests/UnitTests.xml"
+    },
     "config": {
         "sort-packages": true
     }
