@@ -1,15 +1,16 @@
-<?php namespace VisualAppeal;
+<?php
 
-use Composer\Semver\Comparator;
-
-use Desarrolla2\Cache\CacheInterface;
-use Desarrolla2\Cache\NotCache;
+namespace VisualAppeal;
 
 use Exception;
+use RuntimeException;
+
+use Composer\Semver\Comparator;
+use Desarrolla2\Cache\CacheInterface;
+use Desarrolla2\Cache\NotCache;
 use Monolog\Handler\HandlerInterface;
 use Monolog\Logger;
 use Monolog\Handler\NullHandler;
-
 use Psr\SimpleCache\InvalidArgumentException;
 use VisualAppeal\Exceptions\DownloadException;
 use VisualAppeal\Exceptions\ParserException;
@@ -225,7 +226,7 @@ class AutoUpdate
         if (!is_dir($dir)) {
             $this->log->debug(sprintf('Creating new temporary directory "%s"', $dir));
 
-            if (!mkdir($dir, 0755, true)) {
+            if (!mkdir($dir, 0755, true) && !is_dir($dir)) {
                 $this->log->critical(sprintf('Could not create temporary directory "%s"', $dir));
 
                 return false;
@@ -250,7 +251,7 @@ class AutoUpdate
         if (!is_dir($dir)) {
             $this->log->debug(sprintf('Creating new install directory "%s"', $dir));
 
-            if (!mkdir($dir, 0755, true)) {
+            if (!mkdir($dir, 0755, true) && !is_dir($dir)) {
                 $this->log->critical(sprintf('Could not create install directory "%s"', $dir));
 
                 return false;
@@ -697,7 +698,9 @@ class AutoUpdate
 
             // Check if parent directory is writable
             if (!is_dir($foldername)) {
-                mkdir($foldername);
+	            if (!mkdir($foldername) && !is_dir($foldername)) {
+		            throw new RuntimeException( sprintf( 'Directory "%s" was not created', $foldername ) );
+	            }
                 $this->log->debug(sprintf('[SIMULATE] Create directory "%s"', $foldername));
                 $files[$i]['parent_folder_exists'] = false;
 
@@ -812,7 +815,7 @@ class AutoUpdate
             $this->log->debug(sprintf('Updating file "%s"', $filename));
 
             if (!is_dir($foldername)) {
-                if (!mkdir($foldername, $this->dirPermissions, true)) {
+                if (!mkdir($foldername, $this->dirPermissions, true) && !is_dir($foldername)) {
                     $this->log->error(sprintf('Directory "%s" has to be writeable!', $foldername));
 
                     return false;
