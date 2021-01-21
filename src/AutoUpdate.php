@@ -4,6 +4,7 @@ namespace VisualAppeal;
 
 use Exception;
 use RuntimeException;
+use ZipArchive;
 
 use Composer\Semver\Comparator;
 use Desarrolla2\Cache\CacheInterface;
@@ -671,21 +672,20 @@ class AutoUpdate {
         clearstatcache();
 
         // Check if zip file could be opened
-        $zip = zip_open($updateFile);
-        if (!is_resource($zip)) {
-            $this->log->error(sprintf('Could not open zip file "%s", error: %d', $updateFile, $zip));
+        $zip = new ZipArchive();
+        $resource = $zip->open($updateFile);
+        if ($resource !== true) {
+            $this->log->error(sprintf('Could not open zip file "%s", error: %d', $updateFile, $resource));
 
             return false;
         }
 
-        $i               = - 1;
         $files           = [];
         $simulateSuccess = true;
 
-        while ($file = zip_read($zip)) {
-            $i ++;
-
-            $filename         = zip_entry_name($file);
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $fileStats        = $zip->statIndex($i);
+            $filename         = $fileStats['name'];
             $foldername       = $this->installDir . dirname($filename);
             $absoluteFilename = $this->installDir . $filename;
 
@@ -719,16 +719,6 @@ class AutoUpdate {
             // Skip if entry is a directory
             if ($filename[strlen($filename) - 1] === DIRECTORY_SEPARATOR) {
                 continue;
-            }
-
-            // Read file contents from archive
-            $contents = zip_entry_read($file, zip_entry_filesize($file));
-            if ($contents === false) {
-                $files[$i]['extractable'] = false;
-
-                $simulateSuccess = false;
-                $this->log->warning(sprintf('[SIMULATE] Coud not read contents of file "%s" from zip file!',
-                    $filename));
             }
 
             // Write to file
@@ -768,6 +758,8 @@ class AutoUpdate {
             }
         }
 
+        $zip->close();
+
         $this->simulationResults = $files;
 
         return $simulateSuccess;
@@ -803,16 +795,18 @@ class AutoUpdate {
         // Install only if simulateInstall === false
 
         // Check if zip file could be opened
-        $zip = zip_open($updateFile);
-        if (!is_resource($zip)) {
-            $this->log->error(sprintf('Could not open zip file "%s", error: %d', $updateFile, $zip));
+        $zip = new ZipArchive();
+        $resource = $zip->open($updateFile);
+        if ($resource !== true) {
+            $this->log->error(sprintf('Could not open zip file "%s", error: %d', $updateFile, $resource));
 
             return false;
         }
 
         // Read every file from archive
-        while ($file = zip_read($zip)) {
-            $filename         = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, zip_entry_name($file));
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $fileStats        = $zip->statIndex($i);
+            $filename         = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $fileStats['filename']);
             $foldername       = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR,
                 $this->installDir . dirname($filename));
             $absoluteFilename = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $this->installDir . $filename);
@@ -829,52 +823,11 @@ class AutoUpdate {
                 continue;
             }
 
-            // Read file contents from archive
-            $contents = zip_entry_read($file, zip_entry_filesize($file));
-
-            if ($contents === false) {
-                $this->log->error(sprintf('Coud not read zip entry "%s"', $file));
+            // Extract file
+            if ($zip->extractTo($absoluteFilename, $fileStats['filename']) === false) {
+                $this->log->error(sprintf('Coud not read zip entry "%s"', $fileStats['filename']));
                 continue;
             }
-
-            // Write to file
-            if (file_exists($absoluteFilename)) {
-                if (!is_writable($absoluteFilename)) {
-                    $this->log->error(sprintf('Could not overwrite "%s"!', $absoluteFilename));
-
-                    zip_close($zip);
-
-                    return false;
-                }
-            } else {
-                // touch will fail if PHP is not the owner of the file, and file_put_contents is faster than touch.
-                if (file_put_contents($absoluteFilename, '') === false) {
-                    $this->log->error(sprintf('The file "%s" could not be created!', $absoluteFilename));
-                    zip_close($zip);
-
-                    return false;
-                }
-
-                $this->log->debug(sprintf('File "%s" created', $absoluteFilename));
-            }
-
-            $updateHandle = fopen($absoluteFilename, 'wb');
-
-            if (!$updateHandle) {
-                $this->log->error(sprintf('Could not open file "%s"!', $absoluteFilename));
-                zip_close($zip);
-
-                return false;
-            }
-
-            if (false === fwrite($updateHandle, $contents)) {
-                $this->log->error(sprintf('Could not write to file "%s"!', $absoluteFilename));
-                zip_close($zip);
-
-                return false;
-            }
-
-            fclose($updateHandle);
 
             //If file is a update script, include
             if ($filename === $this->updateScriptName) {
@@ -888,7 +841,7 @@ class AutoUpdate {
             }
         }
 
-        zip_close($zip);
+        $zip->close();
 
         $this->log->notice(sprintf('Update "%s" successfully installed', $version));
 
