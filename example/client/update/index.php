@@ -31,7 +31,7 @@ if ($update->newVersionAvailable()) {
     echo '</pre>';
 
     // Optional - empty log file
-    $f = @fopen(__DIR__ . '/update.log', 'r+');
+    $f = @fopen(__DIR__ . '/update.log', 'rb+');
     if ($f !== false) {
         ftruncate($f, 0);
         fclose($f);
