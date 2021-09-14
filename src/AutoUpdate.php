@@ -12,6 +12,7 @@ use Desarrolla2\Cache\NotCache;
 use Monolog\Handler\HandlerInterface;
 use Monolog\Logger;
 use Monolog\Handler\NullHandler;
+use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use VisualAppeal\Exceptions\DownloadException;
 use VisualAppeal\Exceptions\ParserException;
@@ -44,7 +45,7 @@ class AutoUpdate {
     /**
      * Logger instance.
      *
-     * @var Logger
+     * @var LoggerInterface
      */
     private $log;
 
