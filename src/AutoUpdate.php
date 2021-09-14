@@ -10,7 +10,6 @@ use Composer\Semver\Comparator;
 use Desarrolla2\Cache\CacheInterface;
 use Desarrolla2\Cache\NotCache;
 use Monolog\Logger;
-use Monolog\Handler\NullHandler;
 use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 use VisualAppeal\Exceptions\DownloadException;
@@ -199,7 +198,6 @@ class AutoUpdate {
     {
         // Init logger
         $this->log = new Logger('auto-update');
-        $this->log->pushHandler(new NullHandler());
 
         $this->setTempDir($tempDir ?? (__DIR__ . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR));
         $this->setInstallDir($installDir ?? (__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR));
