@@ -367,12 +367,33 @@ class AutoUpdate {
     /**
      * Add a new logging handler.
      *
+     * Warning: If you use {@link AutoUpdate::setLogger()} together with this function, the handler will be added to
+     * the given logger interface. You should probably only use either {@link AutoUpdate::addLogHandler()} or
+     * {@link AutoUpdate::setLogger()} but not both!
+     *
      * @param HandlerInterface $handler See https://github.com/Seldaek/monolog
      * @return AutoUpdate
      */
     public function addLogHandler(HandlerInterface $handler): AutoUpdate
     {
         $this->log->pushHandler($handler);
+
+        return $this;
+    }
+
+    /**
+     * Replace the logger internally used by the given logger instance.
+     *
+     * Using this method overwrites any other logger defined via {@link AutoUpdate::addLogHandler()}.
+     *
+     * Warning: You should probably only use either {@link AutoUpdate::addLogHandler()} or {@link AutoUpdate::setLogger()} but not both!
+     *
+     * @param LoggerInterface $logger
+     * @return AutoUpdate
+     */
+    public function setLogger(LoggerInterface $logger): AutoUpdate
+    {
+        $this->log = $logger;
 
         return $this;
     }
