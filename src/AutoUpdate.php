@@ -373,6 +373,7 @@ class AutoUpdate {
      *
      * @param HandlerInterface $handler See https://github.com/Seldaek/monolog
      * @return AutoUpdate
+     * @deprecated Please inject you own logger instance via {@link AutoUpdate::setLogger()}
      */
     public function addLogHandler(HandlerInterface $handler): AutoUpdate
     {
