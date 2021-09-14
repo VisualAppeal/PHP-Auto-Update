@@ -9,9 +9,12 @@ $update->setCurrentVersion('0.1.0');
 // Replace with your server update directory
 $update->setUpdateUrl('http://127.0.0.1:8090/example/server');
 
-// Log handler and cache are optional
-$update->addLogHandler(new Monolog\Handler\StreamHandler(__DIR__ . '/update.log'));
+// Custom logger (optional)
+$logger = new \Monolog\Logger("default");
+$logger->pushHandler(new Monolog\Handler\StreamHandler(__DIR__ . '/update.log'));
+$update->setLogger($logger);
 
+// Cache (optional but recommended)
 $cache = new Desarrolla2\Cache\File(__DIR__ . '/cache');
 $update->setCache($cache, 3600);
 
