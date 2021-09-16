@@ -132,7 +132,7 @@ class AutoUpdate {
     protected $currentVersion;
 
     /**
-     * Create new folders with this privileges.
+     * Create new folders with these privileges.
      *
      * @var int
      */
@@ -871,7 +871,7 @@ class AutoUpdate {
             return self::ERROR_VERSION_CHECK;
         }
 
-        // Check if current version is up to date
+        // Check if current version is up-to-date
         if (!$this->newVersionAvailable()) {
             $this->log->warning('No update available!');
 
