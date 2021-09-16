@@ -804,7 +804,7 @@ class AutoUpdate {
         // Read every file from archive
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $fileStats        = $zip->statIndex($i);
-            $filename         = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $fileStats['filename']);
+            $filename         = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $fileStats['name']);
             $foldername       = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR,
                 $this->installDir . dirname($filename));
             $absoluteFilename = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $this->installDir . $filename);
@@ -822,8 +822,8 @@ class AutoUpdate {
             }
 
             // Extract file
-            if ($zip->extractTo($absoluteFilename, $fileStats['filename']) === false) {
-                $this->log->error(sprintf('Coud not read zip entry "%s"', $fileStats['filename']));
+            if ($zip->extractTo($absoluteFilename, $fileStats['name']) === false) {
+                $this->log->error(sprintf('Coud not read zip entry "%s"', $fileStats['name']));
                 continue;
             }
 
