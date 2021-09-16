@@ -1,3 +1,5 @@
+[![PHPUnit](https://github.com/VisualAppeal/PHP-Auto-Update/actions/workflows/phpunit.yml/badge.svg)](https://github.com/VisualAppeal/PHP-Auto-Update/actions/workflows/phpunit.yml)
+
 With this library your users can automatically update their instance of your application to the newest version. I created it as a proof of concept and don't know if it is used somewhere. So please use this library with caution because it can potentially make your users software nonfunctional if something goes wrong.
 
 ## Installation
