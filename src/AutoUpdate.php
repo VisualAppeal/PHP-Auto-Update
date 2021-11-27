@@ -48,7 +48,7 @@ class AutoUpdate {
     private $log;
 
     /**
-     * Result of simulated install.
+     * Result of simulated installation.
      *
      * @var array
      */
@@ -183,7 +183,7 @@ class AutoUpdate {
     public const ERROR_DELETE_TEMP_UPDATE = 50;
 
     /**
-     * Error in simulated install.
+     * Error in simulated installation.
      */
     public const ERROR_SIMULATE = 70;
 
@@ -237,7 +237,7 @@ class AutoUpdate {
     }
 
     /**
-     * Set the install directory.
+     * Set the installation directory.
      *
      * @param string $dir
      * @return bool
@@ -823,7 +823,7 @@ class AutoUpdate {
 
             // Extract file
             if ($zip->extractTo($this->installDir, $fileStats['name']) === false) {
-                $this->log->error(sprintf('Coud not read zip entry "%s"', $fileStats['name']));
+                $this->log->error(sprintf('Could not read zip entry "%s"', $fileStats['name']));
                 continue;
             }
 
