@@ -822,7 +822,7 @@ class AutoUpdate {
             }
 
             // Extract file
-            if ($zip->extractTo($absoluteFilename, $fileStats['name']) === false) {
+            if ($zip->extractTo($this->installDir, $fileStats['name']) === false) {
                 $this->log->error(sprintf('Coud not read zip entry "%s"', $fileStats['name']));
                 continue;
             }
