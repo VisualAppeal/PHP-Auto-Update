@@ -69,7 +69,7 @@ if ($update->newVersionAvailable()) {
     } else {
         echo 'Update simulation failed: ' . $result . '!<br>';
 
-        if ($result = AutoUpdate::ERROR_SIMULATE) {
+        if ($result == AutoUpdate::ERROR_SIMULATE) {
             echo '<pre>';
             var_dump($update->getSimulationResults());
             echo '</pre>';
