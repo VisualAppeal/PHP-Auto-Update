@@ -10,14 +10,14 @@
     ],
     "minimum-stability": "stable",
     "require": {
-        "ext-json": "*",
-        "ext-curl": "*",
-        "ext-zip": "*",
         "php": ">=7.2.0",
+        "ext-curl": "*",
+        "ext-json": "*",
+        "ext-zip": "*",
+        "composer/semver": "^3.0",
         "desarrolla2/cache": "^3.0",
         "monolog/monolog": "^2.1",
-        "composer/semver": "^3.0",
-        "psr/log": "1.1.4"
+        "psr/log": "^1.0|^2.0|^3.0"
     },
     "require-dev": {
         "roave/security-advisories": "dev-master",
