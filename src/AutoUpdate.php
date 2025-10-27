@@ -43,7 +43,7 @@ class AutoUpdate {
      *
      * @var array
      */
-    private array $simulationResults = array();
+    private array $simulationResults = [];
 
     /**
      * Temporary download directory.
@@ -299,11 +299,11 @@ class AutoUpdate {
     private function useBasicAuth()
     {
         if ($this->username && $this->password) {
-            return stream_context_create(array(
-                'http' => array(
+            return stream_context_create([
+                'http' => [
                     'header' => "Authorization: Basic " . base64_encode("$this->username:$this->password")
-                )
-            ));
+                ]
+            ]);
         }
 
         return null;
@@ -340,9 +340,7 @@ class AutoUpdate {
     public function getVersionsToUpdate(): array
     {
         if (count($this->updates) > 0) {
-            return array_map(static function ($update) {
-                return $update['version'];
-            }, $this->updates);
+            return array_map(static fn($update) => $update['version'], $this->updates);
         }
 
         return [];
@@ -443,9 +441,7 @@ class AutoUpdate {
                         throw new ParserException(sprintf('Could not parse update ini file %s!', $this->updateFile));
                     }
 
-                    $versions = array_map(static function ($block) {
-                        return $block['url'] ?? false;
-                    }, $versions);
+                    $versions = array_map(static fn($block) => $block['url'] ?? false, $versions);
 
                     break;
                 case 'json':
@@ -757,10 +753,10 @@ class AutoUpdate {
         // Read every file from archive
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $fileStats        = $zip->statIndex($i);
-            $filename         = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $fileStats['name']);
-            $foldername       = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR,
+            $filename         = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $fileStats['name']);
+            $foldername       = str_replace(['/', '\\'], DIRECTORY_SEPARATOR,
                 $this->installDir . dirname($filename));
-            $absoluteFilename = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $this->installDir . $filename);
+            $absoluteFilename = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $this->installDir . $filename);
             $this->log->debug(sprintf('Updating file "%s"', $filename));
 
             if (!is_dir($foldername) && !mkdir($foldername, $this->dirPermissions, true) && !is_dir($foldername)) {

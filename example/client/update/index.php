@@ -28,9 +28,7 @@ if ($update->newVersionAvailable()) {
     echo 'New Version: ' . $update->getLatestVersion() . '<br>';
     echo 'Installing Updates: <br>';
     echo '<pre>';
-    var_dump(array_map(function ($version) {
-        return (string) $version;
-    }, $update->getVersionsToUpdate()));
+    var_dump(array_map(fn($version) => (string) $version, $update->getVersionsToUpdate()));
     echo '</pre>';
 
     // Optional - empty log file
