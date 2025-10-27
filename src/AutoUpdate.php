@@ -20,136 +20,102 @@ use VisualAppeal\Exceptions\ParserException;
 class AutoUpdate {
     /**
      * The latest version.
-     *
-     * @var string
      */
-    private $latestVersion;
+    private ?string $latestVersion;
 
     /**
      * Updates not yet installed.
-     *
-     * @var array
      */
-    private $updates;
+    private array $updates;
 
     /**
      * Cache for update requests.
-     *
-     * @var CacheInterface|null
      */
-    private $cache = null;
+    private ?CacheInterface $cache = null;
 
     /**
      * Logger instance.
-     *
-     * @var LoggerInterface
      */
-    private $log;
+    private LoggerInterface $log;
 
     /**
      * Result of simulated installation.
      *
      * @var array
      */
-    private $simulationResults = array();
+    private array $simulationResults = array();
 
     /**
      * Temporary download directory.
-     *
-     * @var string
      */
-    private $tempDir = '';
+    private string $tempDir = '';
 
     /**
      * Install directory.
-     *
-     * @var string
      */
-    private $installDir = '';
+    private string $installDir = '';
 
     /**
      * Update branch.
-     *
-     * @var string
      */
-    private $branch = '';
+    private string $branch = '';
 
     /**
      * Username authentication
-     *
-     * @var string
      */
-    private $username = '';
+    private string $username = '';
 
     /**
      * Password authentication
-     *
-     * @var string
      */
-    private $password = '';
+    private string $password = '';
 
-    /*
+    /**
      * Callbacks to be called when each update is finished
-     *
-     * @var array
      */
-    private $onEachUpdateFinishCallbacks = [];
+    private array $onEachUpdateFinishCallbacks = [];
 
-    /*
+    /**
      * Callbacks to be called when all updates are finished
-     *
-     * @var array
      */
-    private $onAllUpdateFinishCallbacks = [];
+    private array $onAllUpdateFinishCallbacks = [];
 
     /**
      * If curl should verify the host certificate.
-     *
-     * @var bool
      */
-    private $sslVerifyHost = true;
+    private bool $sslVerifyHost = true;
 
     /**
      * Url to the update folder on the server.
-     *
-     * @var string
      */
-    protected $updateUrl = 'https://example.com/updates/';
+    protected string $updateUrl = 'https://example.com/updates/';
 
     /**
      * Version filename on the server.
-     *
-     * @var string
      */
-    protected $updateFile = 'update.json';
+    protected string $updateFile = 'update.json';
 
     /**
      * Current version.
-     *
-     * @var string
      */
-    protected $currentVersion;
+    protected string $currentVersion = '';
 
     /**
      * Create new folders with these privileges.
      *
      * @var int
      */
-    public $dirPermissions = 0755;
+    public int $dirPermissions = 0755;
 
     /**
      * Update script filename.
-     *
-     * @var string
      */
-    public $updateScriptName = '_upgrade.php';
+    public string $updateScriptName = '_upgrade.php';
 
     /**
      * How long the cache should be valid (in seconds).
-     *
-     * @var int
      */
-    protected $cacheTtl = 3600;
+    protected int $cacheTtl = 3600;
 
     /**
      * No update available.
@@ -285,11 +251,8 @@ class AutoUpdate {
 
     /**
      * Set the update branch.
-     *
-     * @param string branch
-     * @return AutoUpdate
      */
-    public function setBranch($branch): AutoUpdate
+    public function setBranch(string $branch): AutoUpdate
     {
         $this->branch = $branch;
 
@@ -298,10 +261,6 @@ class AutoUpdate {
 
     /**
      * Set the cache component.
-     *
-     * @param CacheInterface $adapter See https://github.com/desarrolla2/Cache
-     * @param int $ttl
-     * @return AutoUpdate
      */
     public function setCache(CacheInterface $adapter, int $ttl): AutoUpdate
     {
@@ -313,9 +272,6 @@ class AutoUpdate {
 
     /**
      * Set the version of the current installed software.
-     *
-     * @param string $currentVersion
-     * @return AutoUpdate
      */
     public function setCurrentVersion(string $currentVersion): AutoUpdate
     {
@@ -326,10 +282,6 @@ class AutoUpdate {
 
     /**
      * Set username and password for basic authentication.
-     *
-     * @param string $username
-     * @param string $password
-     * @return AutoUpdate
      */
     public function setBasicAuth(string $username, string $password): AutoUpdate
     {
@@ -437,7 +389,7 @@ class AutoUpdate {
      * @throws InvalidArgumentException
      * @throws ParserException
      */
-    public function checkUpdate(int $timeout = 10)
+    public function checkUpdate(int $timeout = 10): bool|int
     {
         $this->log->notice('Checking for a new update...');
 
@@ -497,7 +449,7 @@ class AutoUpdate {
 
                     break;
                 case 'json':
-                    $versions = (array) json_decode($update, false);
+                    $versions = json_decode($update, true);
                     if (!is_array($versions)) {
                         $this->log->error('Unable to parse json update file!');
 
@@ -586,7 +538,7 @@ class AutoUpdate {
      * @param int $timeout
      * @return string|false
      */
-    protected function downloadCurl(string $url, int $timeout = 10)
+    protected function downloadCurl(string $url, int $timeout = 10): bool|string
     {
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, $url);
@@ -857,7 +809,7 @@ class AutoUpdate {
      * @throws ParserException
      * @throws InvalidArgumentException
      */
-    public function update(bool $simulateInstall = true, bool $deleteDownload = true)
+    public function update(bool $simulateInstall = true, bool $deleteDownload = true): bool|int
     {
         $this->log->info('Trying to perform update');
 
