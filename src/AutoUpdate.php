@@ -3,12 +3,11 @@
 namespace VisualAppeal;
 
 use Exception;
+use Psr\SimpleCache\CacheInterface;
 use RuntimeException;
 use ZipArchive;
 
 use Composer\Semver\Comparator;
-use Desarrolla2\Cache\CacheInterface;
-use Desarrolla2\Cache\NotCache;
 use Monolog\Logger;
 use Psr\Log\LoggerInterface;
 use Psr\SimpleCache\InvalidArgumentException;
@@ -36,9 +35,9 @@ class AutoUpdate {
     /**
      * Cache for update requests.
      *
-     * @var CacheInterface
+     * @var CacheInterface|null
      */
-    private $cache;
+    private $cache = null;
 
     /**
      * Logger instance.
@@ -204,9 +203,6 @@ class AutoUpdate {
 
         $this->latestVersion  = '0.0.0';
         $this->currentVersion = '0.0.0';
-
-        // Init cache
-        $this->cache = new NotCache();
 
         ini_set('max_execution_time', $maxExecutionTime);
     }
@@ -449,7 +445,10 @@ class AutoUpdate {
         $this->latestVersion = '0.0.0';
         $this->updates       = [];
 
-        $versions = $this->cache->get('update-versions');
+        $versions = null;
+        if ($this->cache instanceof CacheInterface) {
+            $versions = $this->cache->get('update-versions');
+        }
 
         // Create absolute url to update file
         $updateFile = $this->updateUrl . '/' . $this->updateFile;
@@ -512,7 +511,9 @@ class AutoUpdate {
                     throw new ParserException(sprintf('Unknown file extension for update file %s!', $this->updateFile));
             }
 
-            $this->cache->set('update-versions', $versions, $this->cacheTtl);
+            if ($this->cache instanceof CacheInterface) {
+                $this->cache->set('update-versions', $versions, $this->cacheTtl);
+            }
         } else {
             $this->log->debug('Got updates from cache');
         }
