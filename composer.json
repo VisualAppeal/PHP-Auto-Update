@@ -10,18 +10,18 @@
     ],
     "minimum-stability": "stable",
     "require": {
-        "php": ">=7.2.0",
+        "php": ">=8.0",
         "ext-curl": "*",
         "ext-json": "*",
         "ext-zip": "*",
         "composer/semver": "^3.0",
-        "desarrolla2/cache": "^3.0",
-        "monolog/monolog": "^2.1",
-        "psr/log": "^1.0|^2.0|^3.0"
+        "psr/log": "^1.0|^2.0|^3.0",
+        "psr/simple-cache": "^1.0|^2.0|^3.0"
     },
     "require-dev": {
-        "roave/security-advisories": "dev-master",
-        "phpunit/phpunit": "^9.5"
+        "monolog/monolog": "^3.9",
+        "phpunit/phpunit": "^9.5",
+        "roave/security-advisories": "dev-master"
     },
     "autoload": {
         "psr-4": {
@@ -29,7 +29,7 @@
         }
     },
     "scripts": {
-        "test": "phpunit -c tests/UnitTests.xml"
+        "test": "phpunit"
     },
     "config": {
         "sort-packages": true
