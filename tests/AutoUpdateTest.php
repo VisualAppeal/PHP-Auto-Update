@@ -8,6 +8,9 @@ use VisualAppeal\AutoUpdate;
 use VisualAppeal\Exceptions\DownloadException;
 use VisualAppeal\Exceptions\ParserException;
 
+/**
+ * @covers \VisualAppeal\AutoUpdate
+ */
 class AutoUpdateTest extends TestCase
 {
     /**
