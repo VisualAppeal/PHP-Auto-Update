@@ -20,7 +20,7 @@ class AutoUpdate {
     /**
      * The latest version.
      */
-    private ?string $latestVersion;
+    private string $latestVersion;
 
     /**
      * Updates not yet installed.
@@ -534,7 +534,7 @@ class AutoUpdate {
     {
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, $this->sslVerifyHost ? 2 : 0);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, $this->sslVerifyHost);
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 5);
@@ -714,9 +714,9 @@ class AutoUpdate {
      * @param string $updateFile Path to the update file
      * @param bool $simulateInstall Check for directory and file permissions instead of installing the update
      * @param string $version
-     * @return bool
+     * @return bool|int
      */
-    protected function install(string $updateFile, bool $simulateInstall, string $version): bool
+    protected function install(string $updateFile, bool $simulateInstall, string $version): bool|int
     {
         $this->log?->notice(sprintf('Trying to install update "%s"', $updateFile));
 
@@ -806,11 +806,11 @@ class AutoUpdate {
         $this->log?->info('Trying to perform update');
 
         // Check for latest version
-        if ($this->latestVersion === null || count($this->updates) === 0) {
+        if (count($this->updates) === 0) {
             $this->checkUpdate();
         }
 
-        if ($this->latestVersion === null || count($this->updates) === 0) {
+        if (count($this->updates) === 0) {
             $this->log?->error('Could not get latest version from server!');
 
             return self::ERROR_VERSION_CHECK;
